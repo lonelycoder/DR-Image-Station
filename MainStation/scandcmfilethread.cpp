@@ -49,6 +49,18 @@ void ScanDcmFileThread::run()
                 study->patientSex = QString::fromLatin1(value);
                 dset->findAndGetString(DCM_PatientBirthDate, value);
                 study->patientBirth = QDate::fromString(QString::fromLatin1(value), "yyyyMMdd");
+                dset->findAndGetString(DCM_PatientAge, value);
+                study->patientAge = QString::fromLatin1(value);
+                dset->findAndGetString(DCM_PatientAddress, value);
+                study->patientAddr = QString::fromLocal8Bit(value);
+                dset->findAndGetString(DCM_PatientTelephoneNumbers, value);
+                study->patientPhone = QString::fromLocal8Bit(value);
+                dset->findAndGetString(DCM_PatientWeight, value);
+                study->patientWeight = QString::fromLatin1(value);
+                dset->findAndGetString(DCM_PatientSize, value);
+                study->patientSize = QString::fromLatin1(value);
+                dset->findAndGetString(DCM_MedicalAlerts, value);
+                study->medicalAlert = QString::fromLocal8Bit(value);
                 dset->findAndGetString(DCM_StudyDate, value);
                 study->studyTime.setDate(QDate::fromString(QString::fromLatin1(value), "yyyyMMdd"));
                 dset->findAndGetString(DCM_StudyTime, value);
@@ -105,8 +117,8 @@ void ScanDcmFileThread::run()
                         value = doc.getContentTime();
                         report->contentTime.setTime(formatDicomTime(QString::fromLatin1(value)));
 
-                        report->isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete)?tr("Completed"):tr("Uncompleted");
-                        report->isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified)?tr("Verified"):tr("Unverified");
+                        report->isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete)?tr("Yes"):tr("No");
+                        report->isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified)?tr("Yes"):tr("No");
                     }
                 }
             }

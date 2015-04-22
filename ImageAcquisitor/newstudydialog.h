@@ -13,8 +13,7 @@ class NewStudyDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit NewStudyDialog(QWidget *parent = 0);
-    explicit NewStudyDialog(const StudyRecord &studyRec, QWidget *parent);
+    explicit NewStudyDialog(const StudyRecord &studyRec, QWidget *parent = 0);
     ~NewStudyDialog();
 
     const StudyRecord& getStudyRecord() const { return study; }
@@ -22,12 +21,14 @@ public:
 public slots:
     void onOk();
 
+    void updateAge(const QDate &date);
+    void updateBirth();
+
 private:
     void init();
     Ui::NewStudyDialog *ui;
 
     StudyRecord study;
-    bool modifyMode;
 };
 
 #endif // NEWSTUDYDIALOG_H

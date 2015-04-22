@@ -1,13 +1,16 @@
 #include "studyregisterwidget.h"
 #include "ui_studyregisterwidget.h"
+
 #include "worklistitemmodel.h"
 #include "../DicomService/wlistscuthread.h"
-#include "../DicomService/echoscu.h"
-#include "newstudydialog.h"
 #include "../MainStation/mainwindow.h"
+#include "../MainStation/studydbmanager.h"
+#include "../share/studyrecord.h"
 
 #include <QSortFilterProxyModel>
 #include <QMessageBox>
+#include <QSettings>
+#include <QDate>
 
 StudyRegisterWidget::StudyRegisterWidget(QWidget *parent) :
     QWidget(parent),
@@ -36,6 +39,28 @@ void StudyRegisterWidget::init()
     onWlistToday();
     createConnections();
     setPermissions();
+
+    QSettings s;
+    const CustomizedId &pidf = mainWindow->getPatientIdFormat();
+    int start = s.value(PATIENTID_START).toInt();
+    ui->newPatientIdEdit->setText(QString("%1%2%3").arg(pidf.prefix)
+                               .arg(start, pidf.digits, 10, QChar('0'))
+                               .arg(pidf.suffix));
+    const CustomizedId &aidf = mainWindow->getAccNumFormat();
+    start = s.value(ACCNUMBER_START).toInt();
+    ui->newAccNumEdit->setText(QString("%1%2%3").arg(aidf.prefix)
+                            .arg(start, aidf.digits, 10, QChar('0'))
+                            .arg(aidf.suffix));
+
+    QStringList phys = s.value(REQ_PHYSICIANS).toStringList();
+    ui->newReqPhysicianCombo->addItems(phys);
+    phys = s.value(PER_PHYSICIANS).toStringList();
+    ui->newPerPhysicianCombo->addItems(phys);
+
+    ui->newReqPhysicianCombo->setCurrentText(mainWindow->getCurrentUser().name);
+    ui->newPerPhysicianCombo->setCurrentText(mainWindow->getCurrentUser().name);
+    ui->newPatientBirthDateEdit->setDate(QDate::currentDate());
+
 }
 
 void StudyRegisterWidget::clearWlistScps()
@@ -49,9 +74,7 @@ void StudyRegisterWidget::clearWlistScps()
 void StudyRegisterWidget::setPermissions()
 {
     GroupPermissions perm = mainWindow->getCurrentGroup().permissions;
-    ui->newStudyButton->setEnabled(perm & GP_RegisterStudy);
-    ui->emergencyButton->setEnabled(perm & GP_RegisterStudy);
-    ui->acquisitionButton->setEnabled(perm & GP_AcquisitImage);
+    ui->beginStudyButton->setEnabled(perm & GP_RegisterStudy);
 }
 
 void StudyRegisterWidget::onWlistScpUpdated(const QList<DicomScp *> &scps)
@@ -66,18 +89,122 @@ void StudyRegisterWidget::onWlistScpUpdated(const QList<DicomScp *> &scps)
 
 void StudyRegisterWidget::createConnections()
 {
+    connect(ui->beginStudyButton, SIGNAL(clicked()), this, SLOT(onBeginNewStudy()));
+    connect(ui->newPatientAgeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(updateBirth()));
+    connect(ui->newPatientAgeSpin, SIGNAL(valueChanged(int)), this, SLOT(updateBirth()));
+    connect(ui->newPatientBirthDateEdit, SIGNAL(dateChanged(QDate)), this, SLOT(updateAge(QDate)));
     connect(ui->todayButton, SIGNAL(clicked()), this, SLOT(onWlistToday()));
     connect(ui->thisWeekButton, SIGNAL(clicked()), this, SLOT(onWlistThisWeek()));
     connect(ui->thisMonthButton, SIGNAL(clicked()), this, SLOT(onWlistThisMonth()));
     connect(ui->clearButton, SIGNAL(clicked()), this, SLOT(onWlistClear()));
-    connect(ui->echoButton, SIGNAL(clicked()), this, SLOT(onWlistScpEcho()));
     connect(ui->searchButton, SIGNAL(clicked(bool)), this, SLOT(onWlistSearch(bool)));
-    connect(ui->acquisitionButton, SIGNAL(clicked()), this, SLOT(onWlistBeginStudy()));
-    connect(ui->newStudyButton, SIGNAL(clicked()), this, SLOT(onWlistNewStudy()));
-    connect(ui->emergencyButton, SIGNAL(clicked()), this, SLOT(onWlistEmergency()));
     connect(ui->wlistTableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(onWlistDoubleClicked(QModelIndex)));
-
     connect(wlistThread, SIGNAL(finished()), this, SLOT(onWlistScuFinished()));
+}
+
+void StudyRegisterWidget::updateAge(const QDate &date)
+{
+    QDate curDate = QDate::currentDate();
+    if (curDate.year() > date.year()) {
+        ui->newPatientAgeSpin->setValue(curDate.year()-date.year());
+        ui->newPatientAgeCombo->setCurrentIndex(0);
+    } else if (curDate.month() > date.month()) {
+        ui->newPatientAgeSpin->setValue(curDate.month()-date.month());
+        ui->newPatientAgeCombo->setCurrentIndex(1);
+    } else if (curDate.weekNumber() > date.weekNumber()) {
+        ui->newPatientAgeSpin->setValue(curDate.weekNumber()-date.weekNumber());
+        ui->newPatientAgeCombo->setCurrentIndex(2);
+    } else if (curDate.day() > date.day()) {
+        ui->newPatientAgeSpin->setValue(curDate.day()-date.day());
+        ui->newPatientAgeCombo->setCurrentIndex(3);
+    } else {
+        ui->newPatientAgeSpin->setValue(0);
+    }
+}
+
+void StudyRegisterWidget::updateBirth()
+{
+    int value = ui->newPatientAgeSpin->value();
+    QDate curDate = QDate::currentDate();
+    switch (ui->newPatientAgeCombo->currentIndex()) {
+    case 0:
+        ui->newPatientBirthDateEdit->setDate(curDate.addYears(-value));
+        break;
+    case 1:
+        ui->newPatientBirthDateEdit->setDate(curDate.addMonths(-value));
+        break;
+    case 2:
+        ui->newPatientBirthDateEdit->setDate(curDate.addDays(-(value*7)));
+        break;
+    case 3:
+        ui->newPatientBirthDateEdit->setDate(curDate.addDays(-value));
+        break;
+    }
+}
+
+void StudyRegisterWidget::onBeginNewStudy()
+{
+    StudyRecord study;
+    study.accNumber = ui->newAccNumEdit->text();
+    study.patientId = ui->newPatientIdEdit->text();
+    study.patientName = ui->newPatientNameEdit->text();
+    if (study.accNumber.isEmpty() || study.patientId.isEmpty() ||
+            study.patientName.isEmpty() || (ui->newPatientAgeSpin->value()==0)) {
+        QMessageBox::critical(this, tr("Register Study"),
+                              tr("Mandatory fields empty."));
+    } else {
+        study.patientSex = trSex2Sex(ui->newPatientSexCombo->currentText());
+        study.patientBirth = ui->newPatientBirthDateEdit->date();
+
+        QString ageUnit;
+        switch (ui->newPatientAgeCombo->currentIndex()) {
+        case 0:
+            ageUnit = "Y";
+            break;
+        case 1:
+            ageUnit = "M";
+            break;
+        case 2:
+            ageUnit = "W";
+            break;
+        case 3:
+            ageUnit = "D";
+            break;
+        }
+        study.patientAge = QString("%1%2").arg(ui->newPatientAgeSpin->value()).arg(ageUnit);
+
+        study.medicalAlert = ui->newMedicalAlertEdit->text();
+        study.patientAddr = ui->newPatientAddrEdit->text();
+        study.patientPhone = ui->newPatientPhoneEdit->text();
+        if (ui->newPatientWeightDSpin->value() > 0)
+            study.patientWeight = QString::number(ui->newPatientWeightDSpin->value());
+        if (ui->newPatientSizeDSpin->value() > 0)
+            study.patientSize = QString::number(ui->newPatientSizeDSpin->value());
+        study.reqPhysician = ui->newReqPhysicianCombo->currentText();
+        study.perPhysician = ui->newPerPhysicianCombo->currentText();
+        study.modality = ui->newModalityCombo->currentText();
+        study.studyDesc = ui->newStudyDescEdit->text();
+
+        if (StudyDbManager::insertStudyToDb(study)) {
+            QSettings s;
+            s.setValue(PATIENTID_START, s.value(PATIENTID_START).toInt()+1);
+            s.setValue(ACCNUMBER_START, s.value(ACCNUMBER_START).toInt()+1);
+
+            QStringList phys = s.value(REQ_PHYSICIANS).toStringList();
+            phys.removeOne(study.reqPhysician);
+            phys.prepend(study.reqPhysician);
+            s.setValue(REQ_PHYSICIANS, phys);
+            phys = s.value(PER_PHYSICIANS).toStringList();
+            phys.removeOne(study.perPhysician);
+            phys.prepend(study.perPhysician);
+            s.setValue(PER_PHYSICIANS, phys);
+            emit startAcq(study);
+        } else {
+            QMessageBox::critical(this, tr("New Study"),
+                                  tr("Insert study to Database failed: %1.")
+                                  .arg(StudyDbManager::lastError));
+        }
+    }
 }
 
 void StudyRegisterWidget::onWlistToday()
@@ -88,6 +215,7 @@ void StudyRegisterWidget::onWlistToday()
     ui->fromDateTimeEdit->setTime(QTime(0, 0));
     ui->toDateTimeEdit->setDate(QDate::currentDate());
     ui->toDateTimeEdit->setTime(QTime(23, 59, 59, 999));
+    emit ui->searchButton->clicked(true);
 }
 
 void StudyRegisterWidget::onWlistThisWeek()
@@ -98,6 +226,7 @@ void StudyRegisterWidget::onWlistThisWeek()
     ui->fromDateTimeEdit->setTime(QTime(0, 0));
     ui->toDateTimeEdit->setDate(QDate::currentDate().addDays(6));
     ui->toDateTimeEdit->setTime(QTime(23, 59, 59, 999));
+    emit ui->searchButton->clicked(true);
 }
 
 void StudyRegisterWidget::onWlistThisMonth()
@@ -108,11 +237,13 @@ void StudyRegisterWidget::onWlistThisMonth()
     ui->fromDateTimeEdit->setTime(QTime(0, 0));
     ui->toDateTimeEdit->setDate(QDate::currentDate().addDays(30));
     ui->toDateTimeEdit->setTime(QTime(23, 59, 59, 999));
+    emit ui->searchButton->clicked(true);
 }
 
 void StudyRegisterWidget::onWlistSearch(bool checked)
 {
     if (checked) {
+        ui->searchButton->setChecked(true);
         DicomScp *scp = reinterpret_cast<DicomScp*>(ui->serverCombo->currentData().toULongLong());
         if (!scp) {
             ui->searchButton->setChecked(false);
@@ -133,6 +264,7 @@ void StudyRegisterWidget::onWlistSearch(bool checked)
         ui->searchButton->setText(tr("Abort"));
         wlistThread->start();
     } else {
+        ui->searchButton->setChecked(false);
         wlistThread->setAbort(true);
     }
 }
@@ -157,31 +289,26 @@ void StudyRegisterWidget::onWlistDoubleClicked(const QModelIndex &index)
             study.patientName = item->patientName;
             study.patientSex = item->patientSex;
             study.patientBirth = item->patientBirth;
+            study.patientAge = item->patientAge;
+            study.medicalAlert = item->medicalAlert;
+            study.patientAddr = item->patientAddr;
+            study.patientPhone = item->patientPhone;
+            study.patientWeight = item->patientWeight;
+            study.patientSize = item->patientSize;
             study.studyTime = QDateTime::currentDateTime();
             study.studyDesc = item->studyDesc;
             study.reqPhysician = item->reqPhysician;
             study.perPhysician = item->schPhysician;
             study.procId = item->reqProcId;
-            emit startAcq(study);
-            if (ui->hideOldCheck->isChecked()) wlistModel->removeRow(idx.row());
-        }
-    }
-}
+            if (StudyDbManager::insertStudyToDb(study)) {
+                emit startAcq(study);
+                wlistModel->removeRow(idx.row());
+            } else {
+                QMessageBox::critical(this, tr("New Study"),
+                                      tr("Insert study to Database failed: %1.")
+                                      .arg(StudyDbManager::lastError));
+            }
 
-void StudyRegisterWidget::onWlistScpEcho()
-{
-    DicomScp *wlistScp = reinterpret_cast<DicomScp*>(ui->serverCombo->currentData().toULongLong());
-    if (!wlistScp || wlistScp->aetitle.isEmpty() || wlistScp->hostname.isEmpty()
-            || wlistScp->port <= 0 || wlistScp->port > 65535) {
-        QMessageBox::critical(this, tr("Echo Worklist SCP"), tr("Invalid Worklist SCP"));
-    } else {
-        QString msg;
-        QString ourAet = mainWindow->getStationInfo().aetitle;
-        if (ourAet.isEmpty()) ourAet = QString::fromLatin1(DEFAULT_STATION_AET);
-        if (echoscu(wlistScp->aetitle, ourAet, wlistScp->hostname, wlistScp->port, msg)) {
-            QMessageBox::information(this, tr("Echo Worklist SCP"), tr("Echo succeeded."));
-        } else {
-            QMessageBox::critical(this, tr("Echo Worklist SCP"), tr("Echo failed: %1.").arg(msg));
         }
     }
 }
@@ -194,29 +321,4 @@ void StudyRegisterWidget::onWlistClear()
     ui->modalityCombo->setCurrentIndex(0);
     ui->fromCheck->setChecked(false);
     ui->toCheck->setChecked(false);
-}
-
-void StudyRegisterWidget::onWlistBeginStudy()
-{
-    QModelIndex index = ui->wlistTableView->currentIndex();
-    if (index.isValid()) {
-        onWlistDoubleClicked(index);
-    } else {
-        QMessageBox::information(this, tr("Begin Study"), tr("Select an item in the table first."));
-    }
-}
-
-void StudyRegisterWidget::onWlistNewStudy()
-{
-    NewStudyDialog dialog(this);
-    if (QDialog::Accepted == dialog.exec()) {
-        emit startAcq(dialog.getStudyRecord());
-    }
-}
-
-void StudyRegisterWidget::onWlistEmergency()
-{
-    NewStudyDialog dialog;
-    dialog.onOk();
-    emit startAcq(dialog.getStudyRecord());
 }

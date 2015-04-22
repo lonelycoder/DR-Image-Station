@@ -701,8 +701,8 @@ void ReportWidget::saveReport()
         record.contentTime.setDate(QDate::fromString(QString::fromLatin1(doc.getContentDate()),
                                                      DATE_DICOM_FORMAT));
         record.contentTime.setTime(formatDicomTime(QString::fromLatin1(doc.getContentTime())));
-        record.isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete)?tr("Completed"):tr("Uncompleted");
-        record.isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified)?tr("Verified"):tr("Unverified");
+        record.isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete)?tr("Yes"):tr("No");
+        record.isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified)?tr("Yes"):tr("No");
         record.reportFile = reportFile;
 
         if (isCreated) StudyDbManager::insertReportToDb(record);

@@ -20,10 +20,10 @@ QVariant SqlReportModel::headerData(int section, Qt::Orientation orientation, in
                 return tr("Create Time");
             case ContentTime:
                 return tr("Content Time");
-            case Completed:
-                return tr("Complete Flag");
-            case Verified:
-                return tr("Verify Flag");
+            case IsCompleted:
+                return tr("Is Completed");
+            case IsVerified:
+                return tr("Is Verified");
             case ReportFile:
                 return tr("Report File");
             default:

@@ -261,6 +261,8 @@ struct WorklistItem {
     QString patientName;
     QString patientSex;
     QDate patientBirth;
+    QString patientAge;
+    QString medicalAlert;
     QString patientSize;
     QString patientWeight;
     QString patientPhone;

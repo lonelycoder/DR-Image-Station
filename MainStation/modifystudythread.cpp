@@ -44,6 +44,12 @@ void ModifyStudyThread::run()
                 dset->putAndInsertString(DCM_PatientName, study.value(SqlStudyModel::PatientName).toString().toLocal8Bit().data());
                 dset->putAndInsertString(DCM_PatientSex, study.value(SqlStudyModel::PatientSex).toString().toLatin1().data());
                 dset->putAndInsertString(DCM_PatientBirthDate, study.value(SqlStudyModel::PatientBirth).toDate().toString("yyyyMMdd").toLatin1().data());
+                dset->putAndInsertString(DCM_PatientAge, study.value(SqlStudyModel::PatientAge).toString().toLatin1().data());
+                dset->putAndInsertString(DCM_MedicalAlerts, study.value(SqlStudyModel::MedicalAlert).toString().toLocal8Bit().data());
+                dset->putAndInsertString(DCM_PatientWeight, study.value(SqlStudyModel::PatientWeight).toString().toLatin1().data());
+                dset->putAndInsertString(DCM_PatientSize, study.value(SqlStudyModel::PatientSize).toString().toLatin1().data());
+                dset->putAndInsertString(DCM_PatientAddress, study.value(SqlStudyModel::PatientAddr).toString().toLocal8Bit().data());
+                dset->putAndInsertString(DCM_PatientTelephoneNumbers, study.value(SqlStudyModel::PatientPhone).toString().toLocal8Bit().data());
                 dset->putAndInsertString(DCM_RequestingPhysician, study.value(SqlStudyModel::ReqPhysician).toString().toLocal8Bit().data());
                 dset->putAndInsertString(DCM_PerformingPhysicianName, study.value(SqlStudyModel::PerPhysician).toString().toLocal8Bit().data());
                 if (strcmp(uid, UID_BasicTextSRStorage))

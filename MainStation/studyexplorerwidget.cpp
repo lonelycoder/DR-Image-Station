@@ -14,10 +14,10 @@
 #include "studydbmanager.h"
 #include "../ImageAcquisitor/newstudydialog.h"
 #include "../MainStation/mainwindow.h"
+#include "../MainStation/studydbmanager.h"
 
 #include <QMessageBox>
 #include <QSqlQuery>
-#include <QSqlError>
 #include <QSqlRecord>
 #include <QDebug>
 #include <QSortFilterProxyModel>
@@ -141,7 +141,7 @@ void StudyExplorerWidget::init()
     if (!StudyDbManager::createStudyDb()) {
         QMessageBox::critical(this, tr("Create Study Database"),
                               tr("Create study database failed: %1.")
-                              .arg(StudyDbManager::lastError.text()));
+                              .arg(StudyDbManager::lastError));
     }
 
     setupComponents();
@@ -167,6 +167,7 @@ void StudyExplorerWidget::createConnections()
 
     connect(this, SIGNAL(reportCreated()), reportModel, SLOT(select()));
     connect(this, SIGNAL(studyModified(QSqlRecord)), studyModel, SLOT(onStudyModified(QSqlRecord)));
+    connect(this, SIGNAL(endAcq()), studyModel, SLOT(select()));
 
     connect(studyModel, SIGNAL(studySelectionChanged(QStringList)), imageModel, SLOT(onStudySelected(QStringList)));
     connect(studyModel, SIGNAL(studySelectionChanged(QStringList)), reportModel, SLOT(onStudySelected(QStringList)));
@@ -210,10 +211,10 @@ void StudyExplorerWidget::setupComponents()
 {
     QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
     studyModel = new SqlStudyModel(this, db);
-    studyProxyModel = new QSortFilterProxyModel(this);
+    //studyProxyModel = new QSortFilterProxyModel(this);
     studyView = new SqlStudyView;
-    studyProxyModel->setSourceModel(studyModel);
-    studyView->setModel(studyProxyModel);
+    //studyProxyModel->setSourceModel(studyModel);
+    studyView->setModel(studyModel);
     studyView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     studyView->hideColumn(SqlStudyModel::StudyUid);
     ui->verticalLayout->insertWidget(2, studyView, 1);
@@ -239,9 +240,10 @@ void StudyExplorerWidget::setupComponents()
     hlayout->addWidget(reportView);
     ui->verticalLayout->insertLayout(4, hlayout);
 
-    onToday();
-    onStudySearch();
+    studyModel->setFilter("StudyUid IS NULL");
     studyModel->select();
+    onToday();
+
     imageModel->setFilter("ImageUid IS NULL");
     imageModel->select();
     reportModel->setFilter("ReportUid IS NULL");
@@ -294,6 +296,11 @@ void StudyExplorerWidget::onNewStudyAndAcquisit(const QSqlRecord &studyRec)
     study.patientName = studyRec.value(SqlStudyModel::PatientName).toString();
     study.patientSex = studyRec.value(SqlStudyModel::PatientSex).toString();
     study.patientBirth = studyRec.value(SqlStudyModel::PatientBirth).toDate();
+    study.medicalAlert = studyRec.value(SqlStudyModel::MedicalAlert).toString();
+    study.patientAddr = studyRec.value(SqlStudyModel::PatientAddr).toString();
+    study.patientPhone = studyRec.value(SqlStudyModel::PatientPhone).toString();
+    study.patientSize = studyRec.value(SqlStudyModel::PatientSize).toString();
+    study.patientWeight = studyRec.value(SqlStudyModel::PatientWeight).toString();
     //study.accNumber = studyRec.value(SqlStudyModel::AccNumber).toString();
     study.reqPhysician = studyRec.value(SqlStudyModel::ReqPhysician).toString();
     study.perPhysician = studyRec.value(SqlStudyModel::PerPhysician).toString();
@@ -301,17 +308,29 @@ void StudyExplorerWidget::onNewStudyAndAcquisit(const QSqlRecord &studyRec)
     study.studyDesc = studyRec.value(SqlStudyModel::StudyDesc).toString();
     NewStudyDialog dialog(study, this);
     if (QDialog::Accepted == dialog.exec()) {
-        emit startAcq(dialog.getStudyRecord());
+        if (StudyDbManager::insertStudyToDb(study)) {
+            emit startAcq(dialog.getStudyRecord());
+        } else {
+            QMessageBox::critical(this, tr("New Study"),
+                                  tr("Insert study to Database failed: %1.")
+                                  .arg(StudyDbManager::lastError));
+        }
     }
 }
 
 void StudyExplorerWidget::onModifyStudy(QSqlRecord &studyRec)
 {
     StudyRecord study;
+    study.studyUid = studyRec.value(SqlStudyModel::StudyUid).toString();
     study.patientId = studyRec.value(SqlStudyModel::PatientId).toString();
     study.patientName = studyRec.value(SqlStudyModel::PatientName).toString();
     study.patientSex = studyRec.value(SqlStudyModel::PatientSex).toString();
     study.patientBirth = studyRec.value(SqlStudyModel::PatientBirth).toDate();
+    study.patientAddr = studyRec.value(SqlStudyModel::PatientAddr).toString();
+    study.patientPhone = studyRec.value(SqlStudyModel::PatientPhone).toString();
+    study.patientSize = studyRec.value(SqlStudyModel::PatientSize).toString();
+    study.patientWeight = studyRec.value(SqlStudyModel::PatientWeight).toString();
+    study.medicalAlert = studyRec.value(SqlStudyModel::MedicalAlert).toString();
     study.accNumber = studyRec.value(SqlStudyModel::AccNumber).toString();
     study.reqPhysician = studyRec.value(SqlStudyModel::ReqPhysician).toString();
     study.perPhysician = studyRec.value(SqlStudyModel::PerPhysician).toString();
@@ -325,17 +344,18 @@ void StudyExplorerWidget::onModifyStudy(QSqlRecord &studyRec)
         studyRec.setValue(SqlStudyModel::PatientName, study.patientName);
         studyRec.setValue(SqlStudyModel::PatientSex, study.patientSex);
         studyRec.setValue(SqlStudyModel::PatientBirth, study.patientBirth);
+        studyRec.setValue(SqlStudyModel::PatientAge, study.patientAge);
+        studyRec.setValue(SqlStudyModel::PatientAddr, study.patientAddr);
+        studyRec.setValue(SqlStudyModel::PatientPhone, study.patientPhone);
+        studyRec.setValue(SqlStudyModel::PatientSize, study.patientSize);
+        studyRec.setValue(SqlStudyModel::PatientWeight, study.patientWeight);
+        studyRec.setValue(SqlStudyModel::MedicalAlert, study.medicalAlert);
         studyRec.setValue(SqlStudyModel::ReqPhysician, study.reqPhysician);
         studyRec.setValue(SqlStudyModel::PerPhysician, study.perPhysician);
         studyRec.setValue(SqlStudyModel::Modality, study.modality);
         studyRec.setValue(SqlStudyModel::StudyDesc, study.studyDesc);
         emit studyModified(studyRec);
     }
-}
-
-void StudyExplorerWidget::onStudyAcquisit()
-{
-    studyView->onNewImage();
 }
 
 void StudyExplorerWidget::onStudyAcquisit(const QSqlRecord &studyRec)
@@ -353,9 +373,4 @@ void StudyExplorerWidget::onStudyAcquisit(const QSqlRecord &studyRec)
     study.modality = studyRec.value(SqlStudyModel::Modality).toString();
     study.studyDesc = studyRec.value(SqlStudyModel::StudyDesc).toString();
     emit startAcq(study);
-}
-
-void StudyExplorerWidget::onAcqEnd()
-{
-    studyModel->select();
 }

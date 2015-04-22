@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>694</width>
-    <height>449</height>
+    <height>454</height>
    </rect>
   </property>
   <property name="font">
@@ -26,55 +26,17 @@
       <string>Patient Information</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_9">
-      <item row="4" column="5">
-       <widget class="QSpinBox" name="patientSizeSpin">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
+      <item row="7" column="5">
+       <widget class="QDoubleSpinBox" name="patientSizeDSpin">
         <property name="suffix">
          <string> cm</string>
-        </property>
-        <property name="maximum">
-         <number>999999</number>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QLabel" name="label_16">
-        <property name="text">
-         <string>Patient Size</string>
-        </property>
-        <property name="buddy">
-         <cstring>patientSizeSpin</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="5">
-       <widget class="QDoubleSpinBox" name="patientWeightDSpin">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="prefix">
-         <string/>
-        </property>
-        <property name="suffix">
-         <string> Kg</string>
-        </property>
-        <property name="maximum">
-         <double>100000.000000000000000</double>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="accNumEdit"/>
-      </item>
-      <item row="2" column="2">
-       <widget class="QLabel" name="label_9">
-        <property name="text">
-         <string>Patient Weight</string>
-        </property>
-        <property name="buddy">
-         <cstring>patientWeightDSpin</cstring>
+       <widget class="QLineEdit" name="accNumEdit">
+        <property name="readOnly">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -138,16 +100,6 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="label_23">
-        <property name="text">
-         <string>Patient Address</string>
-        </property>
-        <property name="buddy">
-         <cstring>patientAddrEdit</cstring>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="2">
        <widget class="QLabel" name="label_24">
         <property name="palette">
@@ -195,13 +147,6 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="1" colspan="5">
-       <widget class="QLineEdit" name="patientAddrEdit">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="5">
        <widget class="QComboBox" name="patientSexCombo">
         <item>
@@ -222,7 +167,11 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="patientIdEdit"/>
+       <widget class="QLineEdit" name="patientIdEdit">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_25">
@@ -368,7 +317,170 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="4" column="2">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>Patient Weight</string>
+        </property>
+        <property name="buddy">
+         <cstring>patientWeightDSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="5">
+       <widget class="QDoubleSpinBox" name="patientWeightDSpin">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="prefix">
+         <string/>
+        </property>
+        <property name="suffix">
+         <string> Kg</string>
+        </property>
+        <property name="maximum">
+         <double>100000.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="2">
+       <widget class="QLabel" name="label_16">
+        <property name="text">
+         <string>Patient Size</string>
+        </property>
+        <property name="buddy">
+         <cstring>patientSizeDSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="label">
+        <property name="palette">
+         <palette>
+          <active>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>170</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </active>
+          <inactive>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>170</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </inactive>
+          <disabled>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>120</red>
+              <green>120</green>
+              <blue>120</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </disabled>
+         </palette>
+        </property>
+        <property name="text">
+         <string>Patient Age</string>
+        </property>
+        <property name="buddy">
+         <cstring>patientAgeSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="5">
+       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QSpinBox" name="patientAgeSpin">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximum">
+           <number>99999</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="patientAgeCombo">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <item>
+           <property name="text">
+            <string>Year</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Month</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Week</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Day</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="8" column="1">
+       <widget class="QLineEdit" name="patientAddrEdit">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLineEdit" name="patientPhoneEdit">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="label_23">
+        <property name="text">
+         <string>Patient Address</string>
+        </property>
+        <property name="buddy">
+         <cstring>patientAddrEdit</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
        <widget class="QLabel" name="label_33">
         <property name="text">
          <string>Patient Phone</string>
@@ -378,18 +490,18 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
-       <widget class="QLineEdit" name="patientPhoneEdit">
-        <property name="enabled">
-         <bool>false</bool>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Medical Alerts</string>
         </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+        <property name="buddy">
+         <cstring>medicalAlertEdit</cstring>
         </property>
        </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="medicalAlertEdit"/>
       </item>
      </layout>
     </widget>
@@ -487,37 +599,17 @@
        </widget>
       </item>
       <item row="1" column="2">
-       <widget class="QLabel" name="label_32">
-        <property name="text">
-         <string>Proc ID</string>
-        </property>
-        <property name="buddy">
-         <cstring>procIdEdit</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="3">
-       <widget class="QLineEdit" name="procIdEdit">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1" colspan="3">
-       <widget class="QLineEdit" name="studyDescEdit"/>
-      </item>
-      <item row="2" column="0">
        <widget class="QLabel" name="label_27">
         <property name="text">
-         <string>Study description</string>
+         <string>Study desc</string>
         </property>
         <property name="buddy">
          <cstring>studyDescEdit</cstring>
         </property>
        </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLineEdit" name="studyDescEdit"/>
       </item>
      </layout>
     </widget>
@@ -577,15 +669,9 @@
   <tabstop>patientBirthDateEdit</tabstop>
   <tabstop>accNumEdit</tabstop>
   <tabstop>patientIdEdit</tabstop>
-  <tabstop>patientWeightDSpin</tabstop>
-  <tabstop>patientPhoneEdit</tabstop>
-  <tabstop>patientSizeSpin</tabstop>
-  <tabstop>patientAddrEdit</tabstop>
   <tabstop>reqPhysicianCombo</tabstop>
   <tabstop>modalityCombo</tabstop>
   <tabstop>perPhysicianCombo</tabstop>
-  <tabstop>procIdEdit</tabstop>
-  <tabstop>studyDescEdit</tabstop>
   <tabstop>okButton</tabstop>
   <tabstop>cancelButton</tabstop>
  </tabstops>

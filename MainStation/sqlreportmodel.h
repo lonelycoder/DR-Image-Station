@@ -13,8 +13,8 @@ public:
         StudyUid,
         CreateTime,
         ContentTime,
-        Completed,
-        Verified,
+        IsCompleted,
+        IsVerified,
         ReportFile,
 
         ColumnCount,

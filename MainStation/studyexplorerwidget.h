@@ -32,6 +32,7 @@ signals:
     void createReport(const QString &studyUid);
     void viewReports(const QStringList &reportFiles);
     void startAcq(const StudyRecord &study);
+    void endAcq();
 
     void reportCreated();
     void studyModified(const QSqlRecord &study);
@@ -51,9 +52,7 @@ public slots:
     void onExportReports(const QStringList &reportFiles);
     void onNewStudyAndAcquisit(const QSqlRecord &studyRec);
     void onStudyAcquisit(const QSqlRecord &studyRec);
-    void onStudyAcquisit();
     void onModifyStudy(QSqlRecord &studyRec);
-    void onAcqEnd();
 
 private:
     void init();

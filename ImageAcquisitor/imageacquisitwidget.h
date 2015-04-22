@@ -37,6 +37,7 @@ signals:
 
     void imageDoubleClicked(const QStringList &images);
     void acquisitEnd();
+    void acquisitHalt();
 
 public slots:
     void onStartAcq(const StudyRecord &study);
@@ -107,6 +108,7 @@ private:
     QStringList acqImages;
     QString curStudyUid;
     QString curSeriesUid;
+    int curSeriesNum;
 
     QSerialPort *serialPort;
     DcmFileFormat *imgFormat;

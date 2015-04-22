@@ -23,7 +23,7 @@ public:
     static bool updateReportFile(const QString &reportUid, const QString &reportFile);
     static bool updateReportStatus(const ReportRecord &report);
 
-    static QSqlError lastError;
+    static QString lastError;
 };
 
 #endif // STUDYDBMANAGER_H

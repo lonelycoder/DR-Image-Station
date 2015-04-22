@@ -17,18 +17,31 @@ public:
         PatientName,
         PatientSex,
         PatientBirth,
+        PatientAge,
         StudyTime,
         Modality,
+
+        IsAcquisited,
+        IsReported,
+        IsPrinted,
+        IsSent,
+
         StudyDesc,
         ReqPhysician,
         PerPhysician,
+
+        MedicalAlert,
+        PatientSize,
+        PatientWeight,
+        PatientAddr,
+        PatientPhone,
 
         ColumnCount,
     };
 
     explicit SqlStudyModel(QObject *parent = 0, QSqlDatabase db = QSqlDatabase());
 
-    QVariant headerData(int section, Qt::Orientation orientation = Qt::Horizontal, int role = Qt::DisplayRole) const;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
 
 public slots:

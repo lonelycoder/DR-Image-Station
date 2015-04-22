@@ -10,7 +10,7 @@
 #include <QDir>
 #include <QSqlRecord>
 
-QSqlError StudyDbManager::lastError;
+QString StudyDbManager::lastError;
 
 bool StudyDbManager::createStudyDb(bool recreate)
 {
@@ -28,9 +28,12 @@ bool StudyDbManager::createStudyDb(bool recreate)
         db.exec("CREATE TABLE IF NOT EXISTS StudyTable(StudyUid VARCHAR(128) PRIMARY KEY,"
                 "AccNumber VARCHAR(64) NOT NULL, PatientId VARCHAR(64) NOT NULL,"
                 "PatientName VARCHAR(64), PatientSex VARCHAR(2) NOT NULL,"
-                "PatientBirth DATE NOT NULL, StudyTime DATETIME NOT NULL,"
-                "Modality VARCHAR(2) NOT NULL, StudyDesc TEXT,"
-                "ReqPhysician VARCHAR(64), PerPhysician VARCHAR(64))");
+                "PatientBirth DATE NOT NULL, PatientAge VARCHAR(6), StudyTime DATETIME NOT NULL,"
+                "Modality VARCHAR(2) NOT NULL, IsAcquisited VARCHAR(6), IsReported VARCHAR(6),"
+                "IsPrinted VARCHAR(6), IsSent VARCHAR(6), StudyDesc TEXT,"
+                "ReqPhysician VARCHAR(64), PerPhysician VARCHAR(64),"
+                "MedicalAlert TEXT, PatientSize VARCHAR(6), PatientWeight VARCHAR(6),"
+                "PatientAddr TEXT, PatientPhone VARCHAR(16))");
         db.exec("CREATE INDEX IF NOT EXISTS IX_StudyTable_StudyDate ON StudyTable(StudyTime)");
         db.exec("CREATE TABLE IF NOT EXISTS ImageTable(ImageUid VARCHAR(128) PRIMARY KEY,"
                 "SopClassUid VARCHAR(128) NOT NULL,"
@@ -38,41 +41,55 @@ bool StudyDbManager::createStudyDb(bool recreate)
                 "RefImageUid VARCHAR(128),"
                 "ImageNo VARCHAR(16), ImageTime DATETIME NOT NULL,"
                 "BodyPart VARCHAR(128), ImageDesc TEXT,"
-                "ImageFile VARCHAR(1024),"
+                "ImageFile TEXT,"
                 "FOREIGN KEY(StudyUid) REFERENCES StudyTable(StudyUid))");
         db.exec("CREATE INDEX IF NOT EXISTS IX_ImageTable_ImageTime ON ImageTable(ImageTime)");
         db.exec("CREATE TABLE IF NOT EXISTS ReportTable(ReportUid VARCHAR(128) PRIMARY KEY,"
                 "SeriesUid VARCHAR(128) NOT NULL, StudyUid VARCHAR(128) NOT NULL,"
                 "CreateTime DATETIME NOT NULL, ContentTime DATETIME NOT NULL,"
-                "Completed VARCHAR(16), Verified VARCHAR(16),"
-                "ReportFile VARCHAR(1024),"
+                "IsCompleted VARCHAR(6), IsVerified VARCHAR(6),"
+                "ReportFile TEXT,"
                 "FOREIGN KEY(StudyUid) REFERENCES StudyTable(StudyUid))");
         db.exec("CREATE INDEX IF NOT EXISTS IX_ReportTable_CreateTime ON ReportTable(CreateTime)");
     }
 
-    lastError = db.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = db.lastError().text();
+    return db.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::insertStudyToDb(const StudyRecord &study)
 {
     QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
     QSqlQuery query(db);
-    query.prepare(QString("INSERT INTO StudyTable VALUES(?,?,?,?,?,?,?,?,?,?,?)"));
+    query.prepare(QString("INSERT INTO StudyTable VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"));
     query.addBindValue(study.studyUid);
     query.addBindValue(study.accNumber);
     query.addBindValue(study.patientId);
     query.addBindValue(study.patientName);
     query.addBindValue(study.patientSex);
     query.addBindValue(study.patientBirth.toString("yyyy-MM-dd"));
+    query.addBindValue(study.patientAge);
     query.addBindValue(study.studyTime.toString("yyyy-MM-dd hh:mm:ss"));
     query.addBindValue(study.modality);
+
+    query.addBindValue(study.imageList.size()?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(QObject::tr("No"));
+    query.addBindValue(QObject::tr("No"));
+    query.addBindValue(QObject::tr("No"));
+
     query.addBindValue(study.studyDesc);
     query.addBindValue(study.reqPhysician);
     query.addBindValue(study.perPhysician);
+
+    query.addBindValue(study.medicalAlert);
+    query.addBindValue(study.patientSize);
+    query.addBindValue(study.patientWeight);
+    query.addBindValue(study.patientAddr);
+    query.addBindValue(study.patientPhone);
+
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    QString err = lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::removeStudyFromDb(const QString &studyUid)
@@ -114,8 +131,8 @@ bool StudyDbManager::removeStudyFromDb(const QString &studyUid)
     query.prepare("DELETE FROM StudyTable WHERE StudyUid=?");
     query.addBindValue(studyUid);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::insertImageToDb(const ImageRecord &image)
@@ -134,8 +151,8 @@ bool StudyDbManager::insertImageToDb(const ImageRecord &image)
     query.addBindValue(image.imageDesc);
     query.addBindValue(image.imageFile);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::removeImageFromDb(const QString &imageUid)
@@ -160,8 +177,8 @@ bool StudyDbManager::removeImageFromDb(const QString &imageUid)
     query.prepare("DELETE FROM ImageTable WHERE ImageUid=?");
     query.addBindValue(imageUid);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::insertReportToDb(const ReportRecord &report)
@@ -178,8 +195,8 @@ bool StudyDbManager::insertReportToDb(const ReportRecord &report)
     query.addBindValue(report.isVerified);
     query.addBindValue(report.reportFile);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::removeReportFromDb(const QString &reportUid)
@@ -198,8 +215,8 @@ bool StudyDbManager::removeReportFromDb(const QString &reportUid)
     query.prepare("DELETE FROM ReportTable WHERE ReportUid=?");
     query.addBindValue(reportUid);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::updateImageFile(const QString &imageUid, const QString &imageFile)
@@ -210,8 +227,8 @@ bool StudyDbManager::updateImageFile(const QString &imageUid, const QString &ima
     query.addBindValue(imageFile);
     query.addBindValue(imageUid);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::updateReportFile(const QString &reportUid, const QString &reportFile)
@@ -222,21 +239,21 @@ bool StudyDbManager::updateReportFile(const QString &reportUid, const QString &r
     query.addBindValue(reportFile);
     query.addBindValue(reportUid);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }
 
 bool StudyDbManager::updateReportStatus(const ReportRecord &report)
 {
     QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
     QSqlQuery query(db);
-    query.prepare("UPDATE ReportTable SET ContentTime=?, Completed=?, Verified=?, ReportFile=? WHERE ReportUid=?");
+    query.prepare("UPDATE ReportTable SET ContentTime=?, IsCompleted=?, IsVerified=?, ReportFile=? WHERE ReportUid=?");
     query.addBindValue(report.contentTime.toString("yyyy-MM-dd hh:mm:ss"));
     query.addBindValue(report.isCompleted);
     query.addBindValue(report.isVerified);
     query.addBindValue(report.reportFile);
     query.addBindValue(report.reportUid);
     query.exec();
-    lastError = query.lastError();
-    return lastError.type()==QSqlError::NoError;
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
 }

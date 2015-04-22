@@ -10,7 +10,7 @@ class ImageRecord
 {
 public:
     ImageRecord(const QString &uid = QString()):
-        imageUid(uid), study(0) {}
+        imageUid(uid) {}
 
     QString imageUid;
     QString sopClassUid;
@@ -22,15 +22,13 @@ public:
     QString bodyPart;
     QString imageDesc;
     QString imageFile;
-
-    StudyRecord *study;
 };
 
 class ReportRecord
 {
 public:
     ReportRecord(const QString &uid = QString()):
-        reportUid(uid) ,study(0) {}
+        reportUid(uid) {}
 
     QString reportUid;
     QDateTime createTime;
@@ -40,14 +38,13 @@ public:
     QString reportFile;
     QString seriesUid;
     QString studyUid;
-
-    StudyRecord *study;
 };
 
 class StudyRecord
 {
 public:
-    StudyRecord(const QString &uid = QString()) :studyUid(uid) {}
+    StudyRecord(const QString &uid = QString()) :
+        studyUid(uid) {}
     ~StudyRecord() { qDeleteAll(imageList); qDeleteAll(reportList); }
 
     QString studyUid;
@@ -56,6 +53,12 @@ public:
     QString patientName;
     QString patientSex;
     QDate patientBirth;
+    QString patientAge;
+    QString medicalAlert;
+    QString patientAddr;
+    QString patientPhone;
+    QString patientWeight;
+    QString patientSize;
     QDateTime studyTime;
     QString modality;
     QString studyDesc;

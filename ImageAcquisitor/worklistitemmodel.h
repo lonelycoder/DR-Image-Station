@@ -25,6 +25,7 @@ public:
         SchDateTime,
         SchProcStepId,
         SchProcStepDesc,
+        MedicalAlerts,
         PatientSize,
         PatientWeight,
         PatientPhone,

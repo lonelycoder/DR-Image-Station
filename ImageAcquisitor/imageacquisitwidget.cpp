@@ -67,9 +67,8 @@ void ImageAcquisitWidget::onStartAcq(const StudyRecord &study)
         ui->patientSexEdit->setText(sex2trSex(study.patientSex));
         ui->patientBirthEdit->setText(study.patientBirth.toString(Qt::SystemLocaleDate));
 
-        StudyDbManager::insertStudyToDb(study);
         thumbnailWidget->clear();
-        ui->seriesNoSpin->setValue(0);
+        curSeriesUid.clear();
 
         insertStudyToDataset(study);
     }
@@ -120,9 +119,9 @@ void ImageAcquisitWidget::freeDetector()
 
 void ImageAcquisitWidget::init()
 {
+    curSeriesNum = 0;
     ui->acqBodyTypeCombo->addItems(ProcedureItem::BodyTypeStringTable);
     ui->acqBodyPosCombo->addItems(ProcedureItem::BodyPositionStringTable);
-    ui->seriesDescCombo->addItems(QSettings().value(SERIES_DESCRIPTION).toStringList());
 
     createComponents();
     createConnections();
@@ -192,7 +191,6 @@ void ImageAcquisitWidget::initDcmFileFormat()
 
     dset->putAndInsertString(DCM_SpecificCharacterSet, "ISO_IR 100");
     dset->putAndInsertString(DCM_ImageType, "ORIGINAL\\PRIMARY");
-    dset->putAndInsertString(DCM_SOPClassUID, UID_DigitalXRayImageStorageForPresentation);
     dset->putAndInsertString(DCM_Modality, manuInfo.modality.toLatin1().data());
     dset->putAndInsertString(DCM_ConversionType, "DV");
     dset->putAndInsertString(DCM_Manufacturer, manuInfo.name.toLocal8Bit().data());
@@ -348,19 +346,23 @@ void ImageAcquisitWidget::insertStudyToDataset(const StudyRecord &study)
     dset->putAndInsertString(DCM_PatientName, study.patientName.toLocal8Bit().data());
     dset->putAndInsertString(DCM_PatientBirthDate, study.patientBirth.toString("yyyyMMdd").toLatin1().data());
     dset->putAndInsertString(DCM_PatientSex, study.patientSex.toLatin1().data());
-    dset->putAndInsertString(DCM_PerformingPhysicianName, study.perPhysician.toLocal8Bit().data());
-    dset->putAndInsertString(DCM_RequestingPhysician, study.reqPhysician.toLocal8Bit().data());
-    int ymwd = study.studyTime.date().year() - study.patientBirth.year();
-    if (ymwd > 0) {
-        dset->putAndInsertString(DCM_PatientAge, QString("%1Y").arg(ymwd).toLatin1().data());
-    } else if ((ymwd = study.studyTime.date().month()-study.patientBirth.month()) > 0) {
-        dset->putAndInsertString(DCM_PatientAge, QString("%1M").arg(ymwd).toLatin1().data());
-    } else if ((ymwd = study.studyTime.date().weekNumber()-study.patientBirth.weekNumber()) > 0) {
-        dset->putAndInsertString(DCM_PatientAge, QString("%1W").arg(ymwd).toLatin1().data());
-    } else {
-        ymwd = study.studyTime.date().day()-study.patientBirth.day();
-        dset->putAndInsertString(DCM_PatientAge, QString("%1D").arg(ymwd).toLatin1().data());
-    }
+    if (!study.perPhysician.isEmpty())
+        dset->putAndInsertString(DCM_PerformingPhysicianName, study.perPhysician.toLocal8Bit().data());
+    if (!study.reqPhysician.isEmpty())
+        dset->putAndInsertString(DCM_RequestingPhysician, study.reqPhysician.toLocal8Bit().data());
+    if (!study.patientAge.isEmpty())
+        dset->putAndInsertString(DCM_PatientAge, study.patientAge.toLocal8Bit().data());
+    if (!study.medicalAlert.isEmpty())
+        dset->putAndInsertString(DCM_MedicalAlerts, study.medicalAlert.toLocal8Bit().data());
+    if (!study.patientAddr.isEmpty())
+        dset->putAndInsertString(DCM_PatientAddress, study.patientAddr.toLocal8Bit().data());
+    if (!study.patientPhone.isEmpty())
+        dset->putAndInsertString(DCM_PatientTelephoneNumbers, study.patientPhone.toLocal8Bit().data());
+    if (!study.patientWeight.isEmpty())
+        dset->putAndInsertString(DCM_PatientWeight, study.patientWeight.toLatin1().data());
+    if (!study.patientSize.isEmpty())
+        dset->putAndInsertString(DCM_PatientSize, study.patientSize.toLatin1().data());
+
 
     thumbnailWidget->addStudy(study.studyUid);
 }
@@ -396,7 +398,7 @@ void ImageAcquisitWidget::updateExposureParams()
             ui->acqTubeVoltageSpin->setValue(kvp);
             ui->acqTubeCurrentSpin->setValue(ma);
             ui->acqExposureTimeSpin->setValue(ms);
-            ui->acqPowerSpin->setValue(ma*ms*1000);
+            ui->acqPowerSpin->setValue(ma*ms/1000);
         }
     }
     ui->procIdEdit->setText(procId);
@@ -738,6 +740,7 @@ void ImageAcquisitWidget::onEndAcq()
     }
 
     curStudyUid.clear();
+    curSeriesUid.clear();
     thumbnailWidget->clear();
     ui->patientNameEdit->clear();
     ui->patientBirthEdit->clear();
@@ -762,7 +765,7 @@ void ImageAcquisitWidget::hideEvent(QHideEvent */*event*/)
 {
     startCapture(false);
     onSerialPortOpen(false);
-    emit acquisitEnd();
+    emit acquisitHalt();
 }
 
 void ImageAcquisitWidget::showEvent(QShowEvent */*event*/)
@@ -1027,13 +1030,8 @@ void ImageAcquisitWidget::insertImageToDataset()
         char uid[128];
         QString instUid;
         DcmDataset *dset = imgFormat->getDataset();
-        int seriesNo = ui->seriesNoSpin->value();
-        if (ui->seriesOptionCombo->currentIndex()) {
-            seriesNo++;
-            ui->seriesNoSpin->setValue(seriesNo);
-            curSeriesUid = QString::fromLatin1(dcmGenerateUniqueIdentifier(uid, SITE_SERIES_UID_ROOT));
-        }
         if (curSeriesUid.isEmpty()) {
+            curSeriesNum = thumbnailWidget->getNumberOfImages();
             curSeriesUid = QString::fromLatin1(dcmGenerateUniqueIdentifier(uid, SITE_SERIES_UID_ROOT));
         }
 
@@ -1043,11 +1041,11 @@ void ImageAcquisitWidget::insertImageToDataset()
         dset->putAndInsertString(DCM_SeriesDate, QDate::currentDate().toString("yyyyMMdd").toLatin1().data());
         dset->putAndInsertString(DCM_SeriesTime, QTime::currentTime().toString("hhmmss.zzz").toLatin1().data());
 
-        dset->putAndInsertString(DCM_SeriesNumber, QString::number(seriesNo).toLatin1().data());
+        dset->putAndInsertString(DCM_SeriesNumber, QString::number(curSeriesNum).toLatin1().data());
         dset->putAndInsertString(DCM_SOPInstanceUID, dcmGenerateUniqueIdentifier(uid, SITE_INSTANCE_UID_ROOT));
         instUid = QString::fromLatin1(uid);
         dset->putAndInsertString(DCM_SOPClassUID, UID_DigitalXRayImageStorageForProcessing);
-        dset->putAndInsertString(DCM_InstanceNumber, QString::number(thumbnailWidget->getImageList().size()).toLatin1().data());
+        dset->putAndInsertString(DCM_InstanceNumber, QString::number(thumbnailWidget->getNumberOfImages()).toLatin1().data());
         dset->putAndInsertString(DCM_AcquisitionDate, QDate::currentDate().toString("yyyyMMdd").toLatin1().data());
         dset->putAndInsertString(DCM_AcquisitionTime, QTime::currentTime().toString("hhmmss.zzz").toLatin1().data());
         dset->putAndInsertString(DCM_ContentDate, QDate::currentDate().toString("yyyyMMdd").toLatin1().data());

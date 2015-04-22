@@ -150,6 +150,8 @@ void WlistSCUCallback::callback(T_DIMSE_C_FindRQ *request, int responseCount, T_
         item->patientSex = QString::fromLatin1(value);
         dset->findAndGetString(DCM_PatientBirthDate, value);
         item->patientBirth = QDate::fromString(value, "yyyyMMdd");
+        dset->findAndGetString(DCM_PatientAge, value);
+        item->patientAge = QString::fromLatin1(value);
         dset->findAndGetString(DCM_PatientSize, value);
         item->patientSize = QString::fromLocal8Bit(value);
         dset->findAndGetString(DCM_PatientWeight, value);
@@ -158,6 +160,8 @@ void WlistSCUCallback::callback(T_DIMSE_C_FindRQ *request, int responseCount, T_
         item->patientPhone = QString::fromLocal8Bit(value);
         dset->findAndGetString(DCM_PatientAddress, value);
         item->patientAddr = QString::fromLocal8Bit(value);
+        dset->findAndGetString(DCM_MedicalAlerts, value);
+        item->medicalAlert = QString::fromLocal8Bit(value);
         dset->findAndGetString(DCM_StudyInstanceUID, value);
         item->studyUid = QString::fromLatin1(value);
         dset->findAndGetString(DCM_RequestingPhysician, value);

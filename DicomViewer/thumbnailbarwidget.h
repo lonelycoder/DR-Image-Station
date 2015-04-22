@@ -21,6 +21,7 @@ public:
 
     bool getCurrentStudy(StudyRecord &study) const;
     QList<ImageInstance*> getImageList() const;
+    int getNumberOfImages() const { return imageLabelList.size(); }
     QSize sizeHint() const;
 
 public slots:

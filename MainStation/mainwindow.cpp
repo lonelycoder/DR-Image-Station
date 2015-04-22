@@ -109,7 +109,9 @@ void MainWindow::createConnections()
 
     connect(reportEditTab, SIGNAL(reportCreated()), studyExplorerTab, SIGNAL(reportCreated()));
     connect(registerTab, SIGNAL(startAcq(StudyRecord)), this, SLOT(onStartAcq(StudyRecord)));
+    connect(acquisitTab, SIGNAL(acquisitEnd()), studyExplorerTab, SIGNAL(endAcq()));
     connect(acquisitTab, SIGNAL(acquisitEnd()), this, SLOT(onEndAcq()));
+    connect(acquisitTab, SIGNAL(acquisitHalt()), studyExplorerTab, SIGNAL(endAcq()));
     connect(acquisitTab, SIGNAL(imageDoubleClicked(QStringList)),
             this, SLOT(onViewImages(QStringList)));
     connect(archiveTab, SIGNAL(importFinished()), studyExplorerTab, SLOT(onStudySearch()));
@@ -142,7 +144,6 @@ void MainWindow::onStartAcq(const StudyRecord &study)
 
 void MainWindow::onEndAcq()
 {
-    studyExplorerTab->onAcqEnd();
     ui->tabWidget->setCurrentWidget(studyExplorerTab);
 }
 

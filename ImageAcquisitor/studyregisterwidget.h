@@ -32,12 +32,13 @@ protected slots:
     void onWlistThisMonth();
     void onWlistSearch(bool checked);
     void onWlistScuFinished();
-    void onWlistScpEcho();
     void onWlistClear();
     void onWlistDoubleClicked(const QModelIndex &index);
-    void onWlistBeginStudy();
-    void onWlistNewStudy();
-    void onWlistEmergency();
+
+    void updateAge(const QDate &date);
+    void updateBirth();
+
+    void onBeginNewStudy();
 
 private:
     void init();

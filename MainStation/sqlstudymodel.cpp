@@ -32,16 +32,40 @@ QVariant SqlStudyModel::headerData(int section, Qt::Orientation orientation, int
                 return tr("Sex");
             case PatientBirth:
                 return tr("Birthdate");
+            case PatientAge:
+                return tr("Age");
             case StudyTime:
                 return tr("Study Time");
             case Modality:
                 return tr("Modality");
+
+            case IsAcquisited:
+                return tr("Is Acquisited");
+            case IsReported:
+                return tr("Is Reported");
+            case IsPrinted:
+                return tr("Is Printed");
+            case IsSent:
+                return tr("Is Sent");
+
             case StudyDesc:
                 return tr("Study Desc");
             case ReqPhysician:
                 return tr("Req Physician");
             case PerPhysician:
                 return tr("Per Physician");
+
+            case MedicalAlert:
+                return tr("Medical Alerts");
+            case PatientSize:
+                return tr("Size");
+            case PatientWeight:
+                return tr("Weight");
+            case PatientAddr:
+                return tr("Address");
+            case PatientPhone:
+                return tr("Phone");
+
             default:
                 return QSqlTableModel::headerData(section, orientation, role);
             }

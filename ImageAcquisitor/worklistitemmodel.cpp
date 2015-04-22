@@ -21,6 +21,8 @@ QVariant WorklistItemModel::data(const QModelIndex &index, int role) const
             return sex2trSex(item->patientSex);
         case PatientBirth:
             return item->patientBirth;
+        case MedicalAlerts:
+            return item->medicalAlert;
         case PatientSize:
             return item->patientSize;
         case PatientWeight:
@@ -56,6 +58,7 @@ QVariant WorklistItemModel::data(const QModelIndex &index, int role) const
             return item->schProcStepId;
         case SchProcStepDesc:
             return item->schProcStepDesc;
+
         default:
             return QVariant();
         }
@@ -102,6 +105,8 @@ QVariant WorklistItemModel::headerData(int section, Qt::Orientation orientation,
             case SchProcStepDesc:
                 return tr("Sch Proc Step Desc");
 
+            case MedicalAlerts:
+                return tr("Medical Alerts");
             case PatientSize:
                 return tr("Size(cm)");
             case PatientWeight:
