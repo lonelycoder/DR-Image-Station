@@ -15,6 +15,7 @@ public:
         ContentTime,
         IsCompleted,
         IsVerified,
+        IsPrinted,
         ReportFile,
 
         ColumnCount,

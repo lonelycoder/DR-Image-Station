@@ -7,6 +7,8 @@
 #include "../MainStation/studydbmanager.h"
 #include "../share/studyrecord.h"
 
+#include "dcmtk/dcmdata/dcuid.h"
+
 #include <QSortFilterProxyModel>
 #include <QMessageBox>
 #include <QSettings>
@@ -60,7 +62,7 @@ void StudyRegisterWidget::init()
     ui->newReqPhysicianCombo->setCurrentText(mainWindow->getCurrentUser().name);
     ui->newPerPhysicianCombo->setCurrentText(mainWindow->getCurrentUser().name);
     ui->newPatientBirthDateEdit->setDate(QDate::currentDate());
-
+    ui->newPatientBirthDateEdit->setMaximumDate(QDate::currentDate());
 }
 
 void StudyRegisterWidget::clearWlistScps()
@@ -104,41 +106,44 @@ void StudyRegisterWidget::createConnections()
 
 void StudyRegisterWidget::updateAge(const QDate &date)
 {
-    QDate curDate = QDate::currentDate();
-    if (curDate.year() > date.year()) {
-        ui->newPatientAgeSpin->setValue(curDate.year()-date.year());
-        ui->newPatientAgeCombo->setCurrentIndex(0);
-    } else if (curDate.month() > date.month()) {
-        ui->newPatientAgeSpin->setValue(curDate.month()-date.month());
-        ui->newPatientAgeCombo->setCurrentIndex(1);
-    } else if (curDate.weekNumber() > date.weekNumber()) {
-        ui->newPatientAgeSpin->setValue(curDate.weekNumber()-date.weekNumber());
-        ui->newPatientAgeCombo->setCurrentIndex(2);
-    } else if (curDate.day() > date.day()) {
-        ui->newPatientAgeSpin->setValue(curDate.day()-date.day());
-        ui->newPatientAgeCombo->setCurrentIndex(3);
-    } else {
-        ui->newPatientAgeSpin->setValue(0);
+    if (ui->newPatientBirthDateEdit->hasFocus()) {
+        QDate curDate = QDate::currentDate();
+        if (curDate.year() - date.year() > 1) {
+            ui->newPatientAgeSpin->setValue(curDate.year()-date.year());
+            ui->newPatientAgeCombo->setCurrentIndex(0);
+        } else if ((curDate.year() > date.year()) || (curDate.month() - date.month() > 1)) {
+            ui->newPatientAgeSpin->setValue(curDate.month()-date.month()+(curDate.year()-date.year())*12);
+            ui->newPatientAgeCombo->setCurrentIndex(1);
+        } else if ((curDate.month() > date.month()) || (curDate.weekNumber()-date.weekNumber()>1)) {
+            ui->newPatientAgeSpin->setValue(date.daysTo(curDate)/7);
+            ui->newPatientAgeCombo->setCurrentIndex(2);
+        } else {
+            ui->newPatientAgeSpin->setValue(date.daysTo(curDate));
+            ui->newPatientAgeCombo->setCurrentIndex(3);
+        }
     }
 }
 
 void StudyRegisterWidget::updateBirth()
 {
-    int value = ui->newPatientAgeSpin->value();
-    QDate curDate = QDate::currentDate();
-    switch (ui->newPatientAgeCombo->currentIndex()) {
-    case 0:
-        ui->newPatientBirthDateEdit->setDate(curDate.addYears(-value));
-        break;
-    case 1:
-        ui->newPatientBirthDateEdit->setDate(curDate.addMonths(-value));
-        break;
-    case 2:
-        ui->newPatientBirthDateEdit->setDate(curDate.addDays(-(value*7)));
-        break;
-    case 3:
-        ui->newPatientBirthDateEdit->setDate(curDate.addDays(-value));
-        break;
+    if (ui->newPatientAgeCombo->hasFocus() || ui->newPatientAgeSpin->hasFocus()) {
+        int value = ui->newPatientAgeSpin->value();
+        QDate curDate = QDate::currentDate();
+        ui->newPatientBirthDateEdit->setMaximumDate(curDate);
+        switch (ui->newPatientAgeCombo->currentIndex()) {
+        case 0:
+            ui->newPatientBirthDateEdit->setDate(curDate.addYears(-value));
+            break;
+        case 1:
+            ui->newPatientBirthDateEdit->setDate(curDate.addMonths(-value));
+            break;
+        case 2:
+            ui->newPatientBirthDateEdit->setDate(curDate.addDays(-(value*7)));
+            break;
+        case 3:
+            ui->newPatientBirthDateEdit->setDate(curDate.addDays(-value));
+            break;
+        }
     }
 }
 
@@ -184,6 +189,9 @@ void StudyRegisterWidget::onBeginNewStudy()
         study.perPhysician = ui->newPerPhysicianCombo->currentText();
         study.modality = ui->newModalityCombo->currentText();
         study.studyDesc = ui->newStudyDescEdit->text();
+        study.studyTime = QDateTime::currentDateTime();
+        char uid[128];
+        study.studyUid = QString::fromLatin1(dcmGenerateUniqueIdentifier(uid, SITE_STUDY_UID_ROOT));
 
         if (StudyDbManager::insertStudyToDb(study)) {
             QSettings s;
@@ -198,6 +206,7 @@ void StudyRegisterWidget::onBeginNewStudy()
             phys.removeOne(study.perPhysician);
             phys.prepend(study.perPhysician);
             s.setValue(PER_PHYSICIANS, phys);
+
             emit startAcq(study);
         } else {
             QMessageBox::critical(this, tr("New Study"),
@@ -205,6 +214,31 @@ void StudyRegisterWidget::onBeginNewStudy()
                                   .arg(StudyDbManager::lastError));
         }
     }
+}
+
+void StudyRegisterWidget::showEvent(QShowEvent *e)
+{
+    QSettings s;
+    const CustomizedId &pidf = mainWindow->getPatientIdFormat();
+    int start = s.value(PATIENTID_START).toInt();
+    ui->newPatientIdEdit->setText(QString("%1%2%3").arg(pidf.prefix)
+                               .arg(start, pidf.digits, 10, QChar('0'))
+                               .arg(pidf.suffix));
+    const CustomizedId &aidf = mainWindow->getAccNumFormat();
+    start = s.value(ACCNUMBER_START).toInt();
+    ui->newAccNumEdit->setText(QString("%1%2%3").arg(aidf.prefix)
+                            .arg(start, aidf.digits, 10, QChar('0'))
+                            .arg(aidf.suffix));
+    ui->newPatientBirthDateEdit->setDate(QDate::currentDate());
+    ui->newPatientAgeSpin->setValue(0);
+    ui->newPatientNameEdit->clear();
+    ui->newMedicalAlertEdit->clear();
+    ui->newPatientAddrEdit->clear();
+    ui->newPatientPhoneEdit->clear();
+    ui->newPatientSizeDSpin->setValue(0);
+    ui->newPatientWeightDSpin->setValue(0);
+
+    QWidget::showEvent(e);
 }
 
 void StudyRegisterWidget::onWlistToday()

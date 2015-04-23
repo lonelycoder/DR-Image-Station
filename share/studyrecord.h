@@ -28,16 +28,16 @@ class ReportRecord
 {
 public:
     ReportRecord(const QString &uid = QString()):
-        reportUid(uid) {}
+        reportUid(uid),isCompleted(false),isVerified(false) {}
 
     QString reportUid;
     QDateTime createTime;
     QDateTime contentTime;
-    QString isCompleted;
-    QString isVerified;
     QString reportFile;
     QString seriesUid;
     QString studyUid;
+    bool isCompleted;
+    bool isVerified;
 };
 
 class StudyRecord

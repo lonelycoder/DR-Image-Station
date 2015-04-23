@@ -2,6 +2,7 @@
 #include "../share/configfiles.h"
 #include "../share/global.h"
 #include "../MainStation/mainwindow.h"
+#include "../MainStation/studydbmanager.h"
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
@@ -91,6 +92,7 @@ void StoreSCUThread::run()
                 if (cond.bad()) {
                     emit resultReady(tr("Failed: %1, %2.").arg(file, QString::fromLocal8Bit(cond.text())));
                 } else {
+                    StudyDbManager::updateImageSendStatus(QString::fromLatin1(sopInstance), true);
                     emit resultReady(tr("Sent: %1.").arg(file));
                 }
             }

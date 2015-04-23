@@ -40,6 +40,9 @@ protected slots:
 
     void onBeginNewStudy();
 
+protected:
+    void showEvent(QShowEvent *e);
+
 private:
     void init();
     void createConnections();

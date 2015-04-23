@@ -37,7 +37,6 @@ signals:
 
     void imageDoubleClicked(const QStringList &images);
     void acquisitEnd();
-    void acquisitHalt();
 
 public slots:
     void onStartAcq(const StudyRecord &study);

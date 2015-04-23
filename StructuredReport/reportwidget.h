@@ -32,7 +32,6 @@ public:
     QString getReportFile() const { return reportFile; }
 
 signals:
-    void reportCreated();
     void reportClosed(const QString &reportUid);
 
 public slots:
@@ -40,7 +39,7 @@ public slots:
     void insertImage(ImageInstance *image);
     void loadEvidenceImage(ImageInstance *image);
     void removeImage();
-    void saveReport();
+    bool saveReport();
     void completeReport();
     void verifyReport();
     void print();

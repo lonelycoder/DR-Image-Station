@@ -165,9 +165,7 @@ void StudyExplorerWidget::createConnections()
     connect(ui->newStudyButton, SIGNAL(clicked()), studyView, SLOT(onNewStudy()));
     connect(ui->acquisitButton, SIGNAL(clicked()), studyView, SLOT(onNewImage()));
 
-    connect(this, SIGNAL(reportCreated()), reportModel, SLOT(select()));
     connect(this, SIGNAL(studyModified(QSqlRecord)), studyModel, SLOT(onStudyModified(QSqlRecord)));
-    connect(this, SIGNAL(endAcq()), studyModel, SLOT(select()));
 
     connect(studyModel, SIGNAL(studySelectionChanged(QStringList)), imageModel, SLOT(onStudySelected(QStringList)));
     connect(studyModel, SIGNAL(studySelectionChanged(QStringList)), reportModel, SLOT(onStudySelected(QStringList)));
@@ -211,9 +209,7 @@ void StudyExplorerWidget::setupComponents()
 {
     QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
     studyModel = new SqlStudyModel(this, db);
-    //studyProxyModel = new QSortFilterProxyModel(this);
     studyView = new SqlStudyView;
-    //studyProxyModel->setSourceModel(studyModel);
     studyView->setModel(studyModel);
     studyView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     studyView->hideColumn(SqlStudyModel::StudyUid);
@@ -273,6 +269,7 @@ void StudyExplorerWidget::onSendImages(const QStringList &imageFiles)
     SendStudyDialog dialog(this);
     dialog.setImageFiles(imageFiles);
     dialog.exec();
+    studyModel->select();
 }
 
 void StudyExplorerWidget::onExportImages(const QStringList &imageFiles)
@@ -309,7 +306,9 @@ void StudyExplorerWidget::onNewStudyAndAcquisit(const QSqlRecord &studyRec)
     NewStudyDialog dialog(study, this);
     if (QDialog::Accepted == dialog.exec()) {
         if (StudyDbManager::insertStudyToDb(study)) {
-            emit startAcq(dialog.getStudyRecord());
+            study = dialog.getStudyRecord();
+            //emit studyCreated(study);
+            emit startAcq(study);
         } else {
             QMessageBox::critical(this, tr("New Study"),
                                   tr("Insert study to Database failed: %1.")
@@ -358,6 +357,11 @@ void StudyExplorerWidget::onModifyStudy(QSqlRecord &studyRec)
     }
 }
 
+void StudyExplorerWidget::studyAcquisit()
+{
+    studyView->onNewImage();
+}
+
 void StudyExplorerWidget::onStudyAcquisit(const QSqlRecord &studyRec)
 {
     StudyRecord study;
@@ -373,4 +377,10 @@ void StudyExplorerWidget::onStudyAcquisit(const QSqlRecord &studyRec)
     study.modality = studyRec.value(SqlStudyModel::Modality).toString();
     study.studyDesc = studyRec.value(SqlStudyModel::StudyDesc).toString();
     emit startAcq(study);
+}
+
+void StudyExplorerWidget::showEvent(QShowEvent *e)
+{
+    studyModel->select();
+    QWidget::showEvent(e);
 }

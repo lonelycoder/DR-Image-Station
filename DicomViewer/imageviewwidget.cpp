@@ -9,6 +9,7 @@
 #include "imageinstance.h"
 #include "../DicomService/printscu.h"
 #include "../MainStation/mainwindow.h"
+#include "../MainStation/studydbmanager.h"
 
 #include "dcmtk/ofstd/ofcond.h"
 
@@ -502,10 +503,15 @@ void ImageViewWidget::onFilmPrint()
 
     OFCondition result = printscu(viewList, *printer, ui->copiesSpin->value());
 
-    if (EC_Normal == result)
+    if (EC_Normal == result) {
+        foreach (DicomImageView *v, viewList) {
+            if (v->getImageInstance())
+                StudyDbManager::updateImagePrintStatus(v->getImageInstance()->instanceUid, true);
+        }
         QMessageBox::information(this, tr("Film Print"), tr("Film Print Succeeded."));
-    else
+    } else {
         QMessageBox::critical(this, tr("Film Print"), tr("Film Print Failed: %1.").arg(result.text()));
+    }
 
 }
 

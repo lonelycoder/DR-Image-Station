@@ -16,6 +16,8 @@ public:
         ImageNo,
         ImageTime,
         BodyPart,
+        IsPrinted,
+        IsSent,
         ImageDesc,
         ImageFile,
 

@@ -26,6 +26,10 @@ QVariant SqlImageModel::headerData(int section, Qt::Orientation orientation, int
                 return tr("Image Time");
             case BodyPart:
                 return tr("Body Part");
+            case IsPrinted:
+                return tr("Printed");
+            case IsSent:
+                return tr("Sent");
             case ImageDesc:
                 return tr("Image Desc");
             case ImageFile:

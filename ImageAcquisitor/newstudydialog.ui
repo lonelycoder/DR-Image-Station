@@ -17,7 +17,7 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Modify/New Study</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -428,22 +428,22 @@
           </property>
           <item>
            <property name="text">
-            <string>Year</string>
+            <string>Years</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Month</string>
+            <string>Months</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Week</string>
+            <string>Weeks</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Day</string>
+            <string>Days</string>
            </property>
           </item>
          </widget>

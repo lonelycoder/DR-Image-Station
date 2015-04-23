@@ -40,13 +40,13 @@ QVariant SqlStudyModel::headerData(int section, Qt::Orientation orientation, int
                 return tr("Modality");
 
             case IsAcquisited:
-                return tr("Is Acquisited");
+                return tr("Acquisited");
             case IsReported:
-                return tr("Is Reported");
+                return tr("Reported");
             case IsPrinted:
-                return tr("Is Printed");
+                return tr("Printed");
             case IsSent:
-                return tr("Is Sent");
+                return tr("Sent");
 
             case StudyDesc:
                 return tr("Study Desc");
@@ -80,6 +80,22 @@ QVariant SqlStudyModel::data(const QModelIndex &index, int role) const
         switch (index.column()) {
         case PatientSex:
             return sex2trSex(QSqlTableModel::data(index, role).toString());
+        case PatientAge:
+        {
+            QString ageStr = QSqlTableModel::data(index, role).toString();
+            QString ageUnit = ageStr.right(1);
+            if ((ageUnit=="Y") || (ageUnit=="y")) {
+                return QString("%1%2").arg(ageStr.left(ageStr.size()-1), tr("Years"));
+            } else if ((ageUnit=="M") || (ageUnit=="m")) {
+                return QString("%1%2").arg(ageStr.left(ageStr.size()-1), tr("Months"));
+            } else if ((ageUnit=="W") || (ageUnit=="w")) {
+                return QString("%1%2").arg(ageStr.left(ageStr.size()-1), tr("Weeks"));
+            } else if ((ageUnit=="D") || (ageUnit=="d")) {
+                return QString("%1%2").arg(ageStr.left(ageStr.size()-1), tr("Days"));
+            } else {
+                return ageStr;
+            }
+        }
 /*
         case PatientBirth:
             return QSqlTableModel::data(index, role).toDate();

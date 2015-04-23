@@ -26,9 +26,6 @@ public:
     void createReport(const QString &studyUid);
     bool setActiveReport(const QString &studyUid);
 
-signals:
-    void reportCreated();
-
 public slots:
     void closeAllReports();
 

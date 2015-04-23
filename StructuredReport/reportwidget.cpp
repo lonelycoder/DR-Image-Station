@@ -611,10 +611,11 @@ void ReportWidget::removeImage()
     }
 }
 
-void ReportWidget::saveReport()
+bool ReportWidget::saveReport()
 {
-    DSRDocument &doc = dvi->getCurrentReport();
+    if (!isModified) return true;
 
+    DSRDocument &doc = dvi->getCurrentReport();
     doc.setContentDate(QDate::currentDate().toString(DATE_DICOM_FORMAT).toLatin1().data());
     doc.setContentTime(QTime::currentTime().toString(TIME_DICOM_FORMAT).toLatin1().data());
 
@@ -701,18 +702,19 @@ void ReportWidget::saveReport()
         record.contentTime.setDate(QDate::fromString(QString::fromLatin1(doc.getContentDate()),
                                                      DATE_DICOM_FORMAT));
         record.contentTime.setTime(formatDicomTime(QString::fromLatin1(doc.getContentTime())));
-        record.isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete)?tr("Yes"):tr("No");
-        record.isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified)?tr("Yes"):tr("No");
+        record.isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete);
+        record.isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified);
         record.reportFile = reportFile;
 
-        if (isCreated) StudyDbManager::insertReportToDb(record);
+        if (isCreated && StudyDbManager::insertReportToDb(record)) isCreated = false;
         else if (!isExternal) StudyDbManager::updateReportStatus(record);
 
-        emit reportCreated();
         isModified = false;
+        return true;
     } else {
         QMessageBox::warning(this, tr("Save Structured Report"),
                              tr("Save report failed: %1.").arg(QString::fromLatin1(cond.text())));
+        return false;
     }
 
 }
@@ -751,6 +753,7 @@ void ReportWidget::completeReport()
         ui->reportTimeEdit->setText(time.toString(Qt::SystemLocaleDate));
 
         isModified = true;
+        saveReport();
     }
 }
 
@@ -781,6 +784,7 @@ void ReportWidget::verifyReport()
 
         isModified = true;
         setReadOnly(true);
+        saveReport();
     }
 }
 
@@ -817,8 +821,12 @@ void ReportWidget::print()
 {
     QPrinter printer;
     QPrintDialog dialog(&printer, this);
-    if (dialog.exec() == QDialog::Accepted)
+    if (dialog.exec() == QDialog::Accepted) {
         doPrint(&printer);
+        if (isCreated) saveReport();
+        DSRDocument &doc = dvi->getCurrentReport();
+        StudyDbManager::updateReportPrintStatus(QString::fromLatin1(doc.getSOPInstanceUID()), true);
+    }
 }
 
 void ReportWidget::printPreview()

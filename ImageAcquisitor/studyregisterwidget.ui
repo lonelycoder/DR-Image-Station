@@ -615,22 +615,22 @@
           </property>
           <item>
            <property name="text">
-            <string>Year</string>
+            <string>Years</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Month</string>
+            <string>Months</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Week</string>
+            <string>Weeks</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Day</string>
+            <string>Days</string>
            </property>
           </item>
          </widget>
@@ -916,6 +916,40 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>newPatientNameEdit</tabstop>
+  <tabstop>newPatientSexCombo</tabstop>
+  <tabstop>newPatientAgeSpin</tabstop>
+  <tabstop>newPatientAgeCombo</tabstop>
+  <tabstop>newPatientBirthDateEdit</tabstop>
+  <tabstop>newMedicalAlertEdit</tabstop>
+  <tabstop>newPatientWeightDSpin</tabstop>
+  <tabstop>newPatientSizeDSpin</tabstop>
+  <tabstop>newPatientPhoneEdit</tabstop>
+  <tabstop>newPatientAddrEdit</tabstop>
+  <tabstop>newReqPhysicianCombo</tabstop>
+  <tabstop>newPerPhysicianCombo</tabstop>
+  <tabstop>newModalityCombo</tabstop>
+  <tabstop>newStudyDescEdit</tabstop>
+  <tabstop>beginStudyButton</tabstop>
+  <tabstop>newPatientIdEdit</tabstop>
+  <tabstop>newAccNumEdit</tabstop>
+  <tabstop>wlistTableView</tabstop>
+  <tabstop>fromCheck</tabstop>
+  <tabstop>fromDateTimeEdit</tabstop>
+  <tabstop>toCheck</tabstop>
+  <tabstop>toDateTimeEdit</tabstop>
+  <tabstop>modalityCombo</tabstop>
+  <tabstop>patientIdEdit</tabstop>
+  <tabstop>patientNameEdit</tabstop>
+  <tabstop>accNumberEdit</tabstop>
+  <tabstop>todayButton</tabstop>
+  <tabstop>thisWeekButton</tabstop>
+  <tabstop>thisMonthButton</tabstop>
+  <tabstop>clearButton</tabstop>
+  <tabstop>serverCombo</tabstop>
+  <tabstop>searchButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

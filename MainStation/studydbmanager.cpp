@@ -25,7 +25,7 @@ bool StudyDbManager::createStudyDb(bool recreate)
             db.exec("DROP INDEX IX_ReportTable_CreateTime ON ReportTable");
             db.exec("DROP TABLE ReportTable");
         }
-        db.exec("CREATE TABLE IF NOT EXISTS StudyTable(StudyUid VARCHAR(128) PRIMARY KEY,"
+        db.exec("CREATE TABLE IF NOT EXISTS StudyTable(StudyUid VARCHAR(128) PRIMARY KEY NOT NULL,"
                 "AccNumber VARCHAR(64) NOT NULL, PatientId VARCHAR(64) NOT NULL,"
                 "PatientName VARCHAR(64), PatientSex VARCHAR(2) NOT NULL,"
                 "PatientBirth DATE NOT NULL, PatientAge VARCHAR(6), StudyTime DATETIME NOT NULL,"
@@ -35,19 +35,19 @@ bool StudyDbManager::createStudyDb(bool recreate)
                 "MedicalAlert TEXT, PatientSize VARCHAR(6), PatientWeight VARCHAR(6),"
                 "PatientAddr TEXT, PatientPhone VARCHAR(16))");
         db.exec("CREATE INDEX IF NOT EXISTS IX_StudyTable_StudyDate ON StudyTable(StudyTime)");
-        db.exec("CREATE TABLE IF NOT EXISTS ImageTable(ImageUid VARCHAR(128) PRIMARY KEY,"
+        db.exec("CREATE TABLE IF NOT EXISTS ImageTable(ImageUid VARCHAR(128) PRIMARY KEY NOT NULL,"
                 "SopClassUid VARCHAR(128) NOT NULL,"
                 "SeriesUid VARCHAR(128) NOT NULL, StudyUid VARCHAR(128) NOT NULL,"
                 "RefImageUid VARCHAR(128),"
                 "ImageNo VARCHAR(16), ImageTime DATETIME NOT NULL,"
-                "BodyPart VARCHAR(128), ImageDesc TEXT,"
-                "ImageFile TEXT,"
+                "BodyPart VARCHAR(128), IsPrinted VARCHAR(6), IsSent VARCHAR(6),"
+                "ImageDesc TEXT, ImageFile TEXT,"
                 "FOREIGN KEY(StudyUid) REFERENCES StudyTable(StudyUid))");
         db.exec("CREATE INDEX IF NOT EXISTS IX_ImageTable_ImageTime ON ImageTable(ImageTime)");
-        db.exec("CREATE TABLE IF NOT EXISTS ReportTable(ReportUid VARCHAR(128) PRIMARY KEY,"
+        db.exec("CREATE TABLE IF NOT EXISTS ReportTable(ReportUid VARCHAR(128) PRIMARY KEY NOT NULL,"
                 "SeriesUid VARCHAR(128) NOT NULL, StudyUid VARCHAR(128) NOT NULL,"
                 "CreateTime DATETIME NOT NULL, ContentTime DATETIME NOT NULL,"
-                "IsCompleted VARCHAR(6), IsVerified VARCHAR(6),"
+                "IsCompleted VARCHAR(6), IsVerified VARCHAR(6), IsPrinted VARCHAR(6),"
                 "ReportFile TEXT,"
                 "FOREIGN KEY(StudyUid) REFERENCES StudyTable(StudyUid))");
         db.exec("CREATE INDEX IF NOT EXISTS IX_ReportTable_CreateTime ON ReportTable(CreateTime)");
@@ -72,7 +72,7 @@ bool StudyDbManager::insertStudyToDb(const StudyRecord &study)
     query.addBindValue(study.studyTime.toString("yyyy-MM-dd hh:mm:ss"));
     query.addBindValue(study.modality);
 
-    query.addBindValue(study.imageList.size()?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(QObject::tr("No"));
     query.addBindValue(QObject::tr("No"));
     query.addBindValue(QObject::tr("No"));
     query.addBindValue(QObject::tr("No"));
@@ -135,11 +135,89 @@ bool StudyDbManager::removeStudyFromDb(const QString &studyUid)
     return query.lastError().type()==QSqlError::NoError;
 }
 
+bool StudyDbManager::updateStudyAcquisitStatus(const QString &studyUid, bool acquisited)
+{
+    QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
+    QSqlQuery query(db);
+    query.prepare("UPDATE StudyTable SET IsAcquisited=? WHERE StudyUid=?");
+    query.addBindValue(acquisited?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(studyUid);
+    query.exec();
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
+}
+
+bool StudyDbManager::updateStudyPrintStatus(const QString &studyUid, int printed)
+{
+    QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
+    QSqlQuery query(db);
+    query.prepare("UPDATE StudyTable SET IsPrinted=? WHERE StudyUid=?");
+
+    switch (printed) {
+    case 0:
+        query.addBindValue(QObject::tr("No"));
+        break;
+    case 1:
+        query.addBindValue(QObject::tr("Partial"));
+        break;
+    case 2:
+        query.addBindValue(QObject::tr("Yes"));
+        break;
+    default:
+        query.addBindValue(QString());
+        break;
+    }
+
+    query.addBindValue(studyUid);
+    query.exec();
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
+}
+
+bool StudyDbManager::updateStudyReportStatus(const QString &studyUid, bool reported)
+{
+    QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
+    QSqlQuery query(db);
+    query.prepare("UPDATE StudyTable SET IsReported=? WHERE StudyUid=?");
+    query.addBindValue(reported?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(studyUid);
+    query.exec();
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
+}
+
+bool StudyDbManager::updateStudySendStatus(const QString &studyUid, int sent)
+{
+    QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
+    QSqlQuery query(db);
+    query.prepare("UPDATE StudyTable SET IsSent=? WHERE StudyUid=?");
+
+    switch (sent) {
+    case 0:
+        query.addBindValue(QObject::tr("No"));
+        break;
+    case 1:
+        query.addBindValue(QObject::tr("Partial"));
+        break;
+    case 2:
+        query.addBindValue(QObject::tr("Yes"));
+        break;
+    default:
+        query.addBindValue(QString());
+        break;
+    }
+
+    query.addBindValue(studyUid);
+    query.exec();
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
+}
+
 bool StudyDbManager::insertImageToDb(const ImageRecord &image)
 {
     QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
     QSqlQuery query(db);
-    query.prepare(QString("INSERT INTO ImageTable VALUES(?,?,?,?,?,?,?,?,?,?)"));
+    query.prepare(QString("INSERT INTO ImageTable VALUES(?,?,?,?,?,?,?,?,?,?,?,?)"));
     query.addBindValue(image.imageUid);
     query.addBindValue(image.sopClassUid);
     query.addBindValue(image.seriesUid);
@@ -148,10 +226,12 @@ bool StudyDbManager::insertImageToDb(const ImageRecord &image)
     query.addBindValue(image.imageNo);
     query.addBindValue(image.imageTime.toString("yyyy-MM-dd hh:mm:ss"));
     query.addBindValue(image.bodyPart);
+    query.addBindValue(QObject::tr("No"));
+    query.addBindValue(QObject::tr("No"));
     query.addBindValue(image.imageDesc);
     query.addBindValue(image.imageFile);
-    query.exec();
-    lastError = query.lastError().text();
+    if (query.exec()) updateStudyAcquisitStatus(image.studyUid, true);
+    QString err = lastError = query.lastError().text();
     return query.lastError().type()==QSqlError::NoError;
 }
 
@@ -185,16 +265,83 @@ bool StudyDbManager::insertReportToDb(const ReportRecord &report)
 {
     QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
     QSqlQuery query(db);
-    query.prepare(QString("INSERT INTO ReportTable VALUES(?,?,?,?,?,?,?,?)"));
+    query.prepare(QString("INSERT INTO ReportTable VALUES(?,?,?,?,?,?,?,?,?)"));
     query.addBindValue(report.reportUid);
     query.addBindValue(report.seriesUid);
     query.addBindValue(report.studyUid);
     query.addBindValue(report.createTime.toString("yyyy-MM-dd hh:mm:ss"));
     query.addBindValue(report.contentTime.toString("yyyy-MM-dd hh:mm:ss"));
-    query.addBindValue(report.isCompleted);
-    query.addBindValue(report.isVerified);
+    query.addBindValue(report.isCompleted?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(report.isVerified?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(QObject::tr("No"));
     query.addBindValue(report.reportFile);
-    query.exec();
+    if (query.exec()) updateStudyReportStatus(report.studyUid, true);
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
+}
+
+bool StudyDbManager::updateImagePrintStatus(const QString &imageUid, bool printed)
+{
+    QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
+    QSqlQuery query(db);
+    query.prepare("UPDATE ImageTable SET IsPrinted=? WHERE ImageUid=?");
+    query.addBindValue(printed?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(imageUid);
+    if (query.exec()) {
+        query.prepare("SELECT StudyUid FROM ImageTable WHERE ImageUid=?");
+        query.addBindValue(imageUid);
+        query.exec();
+        while (query.next()) {
+            QString studyUid = query.record().value(0).toString();
+            query.prepare("SELECT IsPrinted FROM ImageTable WHERE StudyUid=?");
+            query.addBindValue(studyUid);
+            query.exec();
+            bool allPrinted = true;
+            bool nonePrinted = true;
+            while (query.next()) {
+                QString status = query.record().value(0).toString();
+                if ((status == QObject::tr("Yes")) || (status == "Yes")) {
+                    nonePrinted = false;
+                } else {
+                    allPrinted = false;
+                }
+            }
+            updateStudyPrintStatus(studyUid, allPrinted?2:(nonePrinted?0:1));
+        }
+    }
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
+}
+
+bool StudyDbManager::updateImageSendStatus(const QString &imageUid, bool sent)
+{
+    QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
+    QSqlQuery query(db);
+    query.prepare("UPDATE ImageTable SET IsSent=? WHERE ImageUid=?");
+    query.addBindValue(sent?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(imageUid);
+    if (query.exec()) {
+        query.prepare("SELECT StudyUid FROM ImageTable WHERE ImageUid=?");
+        query.addBindValue(imageUid);
+        query.exec();
+        while (query.next()) {
+            QString studyUid = query.record().value(0).toString();
+            query.prepare("SELECT IsSent FROM ImageTable WHERE StudyUid=?");
+            query.addBindValue(studyUid);
+            query.exec();
+            bool allSent = true;
+            bool noneSent = true;
+            while (query.next()) {
+                QString status = query.record().value(0).toString();
+                if ((status == QObject::tr("Yes")) || (status == "Yes")) {
+                    noneSent = false;
+                } else {
+                    allSent = false;
+                }
+            }
+            updateStudySendStatus(studyUid, allSent?2:(noneSent?0:1));
+        }
+    }
     lastError = query.lastError().text();
     return query.lastError().type()==QSqlError::NoError;
 }
@@ -249,10 +396,22 @@ bool StudyDbManager::updateReportStatus(const ReportRecord &report)
     QSqlQuery query(db);
     query.prepare("UPDATE ReportTable SET ContentTime=?, IsCompleted=?, IsVerified=?, ReportFile=? WHERE ReportUid=?");
     query.addBindValue(report.contentTime.toString("yyyy-MM-dd hh:mm:ss"));
-    query.addBindValue(report.isCompleted);
-    query.addBindValue(report.isVerified);
+    query.addBindValue(report.isCompleted?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(report.isVerified?QObject::tr("Yes"):QObject::tr("No"));
     query.addBindValue(report.reportFile);
     query.addBindValue(report.reportUid);
+    query.exec();
+    lastError = query.lastError().text();
+    return query.lastError().type()==QSqlError::NoError;
+}
+
+bool StudyDbManager::updateReportPrintStatus(const QString &reportUid, bool printed)
+{
+    QSqlDatabase db = QSqlDatabase::database(STUDY_DB_CONNECTION_NAME);
+    QSqlQuery query(db);
+    query.prepare("UPDATE ReportTable SET IsPrinted=? WHERE ReportUid=?");
+    query.addBindValue(printed?QObject::tr("Yes"):QObject::tr("No"));
+    query.addBindValue(reportUid);
     query.exec();
     lastError = query.lastError().text();
     return query.lastError().type()==QSqlError::NoError;

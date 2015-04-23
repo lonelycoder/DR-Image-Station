@@ -158,7 +158,6 @@ void ReportEditWidget::createReport(const QString &studyUid)
     ReportWidget *report = new ReportWidget;
     report->createReport(studyUid);
     if (report->isReportNormal()) {
-        connect(report, SIGNAL(reportCreated()), this, SIGNAL(reportCreated()));
         connect(report, SIGNAL(reportClosed(QString)), thumbnailWidget, SLOT(removeStduy(QString)));
         insertReportImages(report);
         QScrollArea *scroll = new QScrollArea;

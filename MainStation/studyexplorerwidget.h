@@ -32,9 +32,7 @@ signals:
     void createReport(const QString &studyUid);
     void viewReports(const QStringList &reportFiles);
     void startAcq(const StudyRecord &study);
-    void endAcq();
 
-    void reportCreated();
     void studyModified(const QSqlRecord &study);
 
 public slots:
@@ -54,6 +52,11 @@ public slots:
     void onStudyAcquisit(const QSqlRecord &studyRec);
     void onModifyStudy(QSqlRecord &studyRec);
 
+    void studyAcquisit();
+
+protected:
+    void showEvent(QShowEvent *e);
+
 private:
     void init();
     void setupComponents();
@@ -64,7 +67,6 @@ private:
 
     SqlStudyModel *studyModel;
     SqlStudyView *studyView;
-    QSortFilterProxyModel *studyProxyModel;
     SqlImageModel *imageModel;
     SqlImageView *imageView;
     SqlReportModel *reportModel;

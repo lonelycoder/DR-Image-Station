@@ -117,8 +117,8 @@ void ScanDcmFileThread::run()
                         value = doc.getContentTime();
                         report->contentTime.setTime(formatDicomTime(QString::fromLatin1(value)));
 
-                        report->isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete)?tr("Yes"):tr("No");
-                        report->isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified)?tr("Yes"):tr("No");
+                        report->isCompleted = (doc.getCompletionFlag()==DSRTypes::CF_Complete);
+                        report->isVerified = (doc.getVerificationFlag()==DSRTypes::VF_Verified);
                     }
                 }
             }

@@ -107,11 +107,8 @@ void MainWindow::createConnections()
     connect(studyExplorerTab, SIGNAL(startAcq(StudyRecord)),
             this, SLOT(onStartAcq(StudyRecord)));
 
-    connect(reportEditTab, SIGNAL(reportCreated()), studyExplorerTab, SIGNAL(reportCreated()));
     connect(registerTab, SIGNAL(startAcq(StudyRecord)), this, SLOT(onStartAcq(StudyRecord)));
-    connect(acquisitTab, SIGNAL(acquisitEnd()), studyExplorerTab, SIGNAL(endAcq()));
     connect(acquisitTab, SIGNAL(acquisitEnd()), this, SLOT(onEndAcq()));
-    connect(acquisitTab, SIGNAL(acquisitHalt()), studyExplorerTab, SIGNAL(endAcq()));
     connect(acquisitTab, SIGNAL(imageDoubleClicked(QStringList)),
             this, SLOT(onViewImages(QStringList)));
     connect(archiveTab, SIGNAL(importFinished()), studyExplorerTab, SLOT(onStudySearch()));
@@ -157,13 +154,12 @@ void MainWindow::onCurrentTabChanged()
             if (imageViewTab->getCurrentStudy(study)) {
                 acquisitTab->onStartAcq(study);
             }
-        }/* else if (prevTab == studyExplorerTab) {
-            if (!acquisitTab->hasStudy()) {
-                ui->tabWidget->setCurrentWidget(prevTab);
-                studyExplorerTab->onStudyAcquisit();
-                return;
-            }
-        }*/
+        } else if (prevTab == studyExplorerTab) {
+            ui->tabWidget->setCurrentWidget(prevTab);
+            prevTab = 0;
+            studyExplorerTab->studyAcquisit();
+            return;
+        }
 
         if (!acquisitTab->hasStudy()) {
             ui->tabWidget->setCurrentWidget(prevTab);
@@ -188,9 +184,6 @@ void MainWindow::onCurrentTabChanged()
     } else if (widget == settingsTab) {
         settingsTab->initIdStarts();
         prevTab = widget;
-    } else if (widget == exitTab) {
-        if ((!close()) && prevTab)
-            ui->tabWidget->setCurrentWidget(prevTab);
     } else {
         prevTab = widget;
     }

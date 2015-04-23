@@ -765,7 +765,6 @@ void ImageAcquisitWidget::hideEvent(QHideEvent */*event*/)
 {
     startCapture(false);
     onSerialPortOpen(false);
-    emit acquisitHalt();
 }
 
 void ImageAcquisitWidget::showEvent(QShowEvent */*event*/)

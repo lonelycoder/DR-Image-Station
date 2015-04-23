@@ -24,6 +24,7 @@ NewStudyDialog::~NewStudyDialog()
 
 void NewStudyDialog::init()
 {
+    ui->patientBirthDateEdit->setMaximumDate(QDate::currentDate());
     connect(ui->okButton, SIGNAL(clicked()), this, SLOT(onOk()));
     connect(ui->patientAgeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(updateBirth()));
     connect(ui->patientAgeSpin, SIGNAL(valueChanged(int)), this, SLOT(updateBirth()));
@@ -54,6 +55,7 @@ void NewStudyDialog::init()
     ui->patientIdEdit->setText(study.patientId);
     ui->patientSexCombo->setCurrentText(study.patientSex);
     ui->patientBirthDateEdit->setDate(study.patientBirth);
+    updateAge(study.patientBirth);
     ui->patientNameEdit->setText(study.patientName);
     ui->patientAddrEdit->setText(study.patientAddr);
     ui->patientPhoneEdit->setText(study.patientPhone);
@@ -71,41 +73,43 @@ void NewStudyDialog::init()
 
 void NewStudyDialog::updateAge(const QDate &date)
 {
-    QDate curDate = QDate::currentDate();
-    if (curDate.year() > date.year()) {
-        ui->patientAgeSpin->setValue(curDate.year()-date.year());
-        ui->patientAgeCombo->setCurrentIndex(0);
-    } else if (curDate.month() > date.month()) {
-        ui->patientAgeSpin->setValue(curDate.month()-date.month());
-        ui->patientAgeCombo->setCurrentIndex(1);
-    } else if (curDate.weekNumber() > date.weekNumber()) {
-        ui->patientAgeSpin->setValue(curDate.weekNumber()-date.weekNumber());
-        ui->patientAgeCombo->setCurrentIndex(2);
-    } else if (curDate.day() > date.day()) {
-        ui->patientAgeSpin->setValue(curDate.day()-date.day());
-        ui->patientAgeCombo->setCurrentIndex(3);
-    } else {
-        ui->patientAgeSpin->setValue(0);
+    if (ui->patientBirthDateEdit->hasFocus()) {
+        QDate curDate = QDate::currentDate();
+        if (curDate.year() - date.year() > 1) {
+            ui->patientAgeSpin->setValue(curDate.year()-date.year());
+            ui->patientAgeCombo->setCurrentIndex(0);
+        } else if ((curDate.year() > date.year()) || (curDate.month() - date.month() > 1)) {
+            ui->patientAgeSpin->setValue(curDate.month()-date.month()+(curDate.year()-date.year())*12);
+            ui->patientAgeCombo->setCurrentIndex(1);
+        } else if ((curDate.month() > date.month()) || (curDate.weekNumber()-date.weekNumber()>1)) {
+            ui->patientAgeSpin->setValue(date.daysTo(curDate)/7);
+            ui->patientAgeCombo->setCurrentIndex(2);
+        } else {
+            ui->patientAgeSpin->setValue(date.daysTo(curDate));
+            ui->patientAgeCombo->setCurrentIndex(3);
+        }
     }
 }
 
 void NewStudyDialog::updateBirth()
 {
-    int value = ui->patientAgeSpin->value();
-    QDate curDate = QDate::currentDate();
-    switch (ui->patientAgeCombo->currentIndex()) {
-    case 0:
-        ui->patientBirthDateEdit->setDate(curDate.addYears(-value));
-        break;
-    case 1:
-        ui->patientBirthDateEdit->setDate(curDate.addMonths(-value));
-        break;
-    case 2:
-        ui->patientBirthDateEdit->setDate(curDate.addDays(-(value*7)));
-        break;
-    case 3:
-        ui->patientBirthDateEdit->setDate(curDate.addDays(-value));
-        break;
+    if (ui->patientAgeCombo->hasFocus() || ui->patientAgeSpin->hasFocus()) {
+        int value = ui->patientAgeSpin->value();
+        QDate curDate = QDate::currentDate();
+        switch (ui->patientAgeCombo->currentIndex()) {
+        case 0:
+            ui->patientBirthDateEdit->setDate(curDate.addYears(-value));
+            break;
+        case 1:
+            ui->patientBirthDateEdit->setDate(curDate.addMonths(-value));
+            break;
+        case 2:
+            ui->patientBirthDateEdit->setDate(curDate.addDays(-(value*7)));
+            break;
+        case 3:
+            ui->patientBirthDateEdit->setDate(curDate.addDays(-value));
+            break;
+        }
     }
 }
 
