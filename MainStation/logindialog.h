@@ -16,7 +16,7 @@ public:
     explicit LoginDialog(QWidget *parent = 0);
     ~LoginDialog();
 
-    static bool userLogin(User &user, Group &group);
+    static bool userLogin(User &user = User(), Group &group = Group());
 
 protected slots:
     void verifyPassword();

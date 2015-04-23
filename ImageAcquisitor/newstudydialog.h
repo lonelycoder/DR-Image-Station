@@ -21,7 +21,7 @@ public:
 public slots:
     void onOk();
 
-    void updateAge(const QDate &date);
+    void updateAge(const QDate &date, bool force = false);
     void updateBirth();
 
 private:

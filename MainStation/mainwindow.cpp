@@ -18,6 +18,7 @@
 #include "../DicomViewer/imageviewwidget.h"
 #include "studydbmanager.h"
 #include "logdbmanager.h"
+#include "logindialog.h"
 
 #include <QCloseEvent>
 #include <QSplashScreen>
@@ -87,8 +88,6 @@ void MainWindow::createConnections()
 {
     connect(ui->tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onCurrentTabChanged()));
 
-    connect(settingsTab, SIGNAL(qrScpUpdated(QList<DicomScp*>)),
-            studyExplorerTab, SLOT(onQRScpUpdated(QList<DicomScp*>)));
     connect(settingsTab, SIGNAL(printScpUpdated(QList<DicomScp*>)),
             imageViewTab, SLOT(onPrintScpUpdated(QList<DicomScp*>)));
     connect(settingsTab, SIGNAL(wlistScpUpdated(QList<DicomScp*>)),
@@ -248,13 +247,23 @@ ProcedureItemModel *MainWindow::getProcModel() const
     return settingsTab->getProcModel();
 }
 
+bool MainWindow::savelyClose() const
+{
+    acquisitTab->onEndAcq();
+    return reportEditTab->close();
+}
+
+bool MainWindow::lockStation() const
+{
+    return LoginDialog::userLogin();
+}
+
 void MainWindow::closeEvent(QCloseEvent *e)
 {
-
-    if (QMessageBox::Yes == QMessageBox::question(this, tr("DR Image Station"),
-                                                  tr("Are you sure to exit?"),
-                                                  QMessageBox::Yes|QMessageBox::No)) {
-
-        if (!reportEditTab->close()) e->ignore();
-    } else e->ignore();
+    if (ui->tabWidget->currentWidget()!=exitTab) {
+        ui->tabWidget->setCurrentWidget(exitTab);
+        e->ignore();
+    } else if (!savelyClose()){
+        e->ignore();
+    }
 }

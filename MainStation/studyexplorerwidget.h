@@ -36,8 +36,6 @@ signals:
     void studyModified(const QSqlRecord &study);
 
 public slots:
-    void onQRScpUpdated(const QList<DicomScp*> &scps);
-
     void onToday();
     void onLatestWeek();
     void onLatestMonth();
@@ -60,9 +58,7 @@ protected:
 private:
     void init();
     void setupComponents();
-    void clearQRScps();
     void createConnections();
-    void setPermissions();
     Ui::StudyExplorerWidget *ui;
 
     SqlStudyModel *studyModel;

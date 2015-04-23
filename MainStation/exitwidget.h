@@ -15,6 +15,12 @@ public:
     explicit ExitWidget(QWidget *parent = 0);
     ~ExitWidget();
 
+protected slots:
+    void onLockStation();
+    void onExitStation();
+    void onShutDown();
+    void onReboot();
+
 private:
     Ui::ExitWidget *ui;
 };

@@ -40,6 +40,7 @@ signals:
 
 public slots:
     void onStartAcq(const StudyRecord &study);
+    void onEndAcq();
 
     void onImageDoubleClicked(const QString &imageFile);
     void setDetectorStatus(const QString &msg);
@@ -53,7 +54,6 @@ public slots:
 protected slots:
     void onSerialPortOpen(bool yes);
     void onSerialPortReadReady();
-    void onEndAcq();
 
     void updateExposureParams();
     void onBodyPartChanged(int part);

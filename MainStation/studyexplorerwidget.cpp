@@ -34,28 +34,7 @@ StudyExplorerWidget::StudyExplorerWidget(QWidget *parent) :
 
 StudyExplorerWidget::~StudyExplorerWidget()
 {
-    clearQRScps();
     delete ui;
-}
-
-void StudyExplorerWidget::clearQRScps()
-{
-    for (int i = 1; i < ui->serverCombo->count(); ++i) {
-        delete reinterpret_cast<DicomScp*>(ui->serverCombo->itemData(i).toULongLong());
-    }
-
-    ui->serverCombo->clear();
-}
-
-void StudyExplorerWidget::onQRScpUpdated(const QList<DicomScp *> &scps)
-{
-    clearQRScps();
-
-    ui->serverCombo->addItem("Local");
-    foreach (DicomScp *scp, scps) {
-        DicomScp *newScp = new DicomScp(*scp);
-        ui->serverCombo->addItem(newScp->id, (qulonglong)newScp);
-    }
 }
 
 void StudyExplorerWidget::onToday()
@@ -146,7 +125,6 @@ void StudyExplorerWidget::init()
 
     setupComponents();
     createConnections();
-    setPermissions();
 }
 
 void StudyExplorerWidget::createConnections()
@@ -156,14 +134,6 @@ void StudyExplorerWidget::createConnections()
     connect(ui->latestMonthButton, SIGNAL(clicked()), this, SLOT(onLatestMonth()));
     connect(ui->clearButton, SIGNAL(clicked()), this, SLOT(onClear()));
     connect(ui->searchButton, SIGNAL(clicked()), this, SLOT(onStudySearch()));
-
-    connect(ui->exportButton, SIGNAL(clicked()), studyView, SLOT(onExportStudies()));
-    connect(ui->sendButton, SIGNAL(clicked()), studyView, SLOT(onSendStudies()));
-    connect(ui->removeButton, SIGNAL(clicked()), studyView, SLOT(onRemoveStudies()));
-    connect(ui->viewButton, SIGNAL(clicked()), studyView, SLOT(onViewImages()));
-    connect(ui->newReportButton, SIGNAL(clicked()), studyView, SLOT(onCreateReport()));
-    connect(ui->newStudyButton, SIGNAL(clicked()), studyView, SLOT(onNewStudy()));
-    connect(ui->acquisitButton, SIGNAL(clicked()), studyView, SLOT(onNewImage()));
 
     connect(this, SIGNAL(studyModified(QSqlRecord)), studyModel, SLOT(onStudyModified(QSqlRecord)));
 
@@ -244,18 +214,6 @@ void StudyExplorerWidget::setupComponents()
     imageModel->select();
     reportModel->setFilter("ReportUid IS NULL");
     reportModel->select();
-}
-
-void StudyExplorerWidget::setPermissions()
-{
-    GroupPermissions perms = mainWindow->getCurrentGroup().permissions;
-    ui->exportButton->setEnabled(perms & GP_ExportStudy);
-    ui->sendButton->setEnabled(perms & GP_SendStudy);
-    ui->removeButton->setEnabled(perms & GP_RemoveStudy);
-    ui->viewButton->setEnabled(perms & GP_ExamineStudy);
-    ui->newReportButton->setEnabled(perms & GP_CreateReport);
-    ui->newStudyButton->setEnabled(perms & GP_RegisterStudy);
-    ui->acquisitButton->setEnabled(perms & GP_AcquisitImage);
 }
 
 void StudyExplorerWidget::openOrCreateReport(const QString &studyUid)

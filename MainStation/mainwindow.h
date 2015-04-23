@@ -39,6 +39,8 @@ public:
     const CustomizedId& getPatientIdFormat() const;
     const CustomizedId& getAccNumFormat() const;
     ProcedureItemModel *getProcModel() const;
+    bool savelyClose() const;
+    bool lockStation() const;
 
 
 protected slots:

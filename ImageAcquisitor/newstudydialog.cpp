@@ -55,7 +55,7 @@ void NewStudyDialog::init()
     ui->patientIdEdit->setText(study.patientId);
     ui->patientSexCombo->setCurrentText(study.patientSex);
     ui->patientBirthDateEdit->setDate(study.patientBirth);
-    updateAge(study.patientBirth);
+    updateAge(study.patientBirth, true);
     ui->patientNameEdit->setText(study.patientName);
     ui->patientAddrEdit->setText(study.patientAddr);
     ui->patientPhoneEdit->setText(study.patientPhone);
@@ -71,9 +71,9 @@ void NewStudyDialog::init()
     }
 }
 
-void NewStudyDialog::updateAge(const QDate &date)
+void NewStudyDialog::updateAge(const QDate &date, bool force)
 {
-    if (ui->patientBirthDateEdit->hasFocus()) {
+    if (force || ui->patientBirthDateEdit->hasFocus()) {
         QDate curDate = QDate::currentDate();
         if (curDate.year() - date.year() > 1) {
             ui->patientAgeSpin->setValue(curDate.year()-date.year());
