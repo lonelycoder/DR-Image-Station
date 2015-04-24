@@ -120,6 +120,7 @@ void ImageAcquisitWidget::freeDetector()
 void ImageAcquisitWidget::init()
 {
     curSeriesNum = 0;
+    ui->acqSaveButton->setEnabled(mainWindow->getCurrentGroup().permissions & GP_ProcedureParam);
     ui->acqBodyTypeCombo->addItems(ProcedureItem::BodyTypeStringTable);
     ui->acqBodyPosCombo->addItems(ProcedureItem::BodyPositionStringTable);
 

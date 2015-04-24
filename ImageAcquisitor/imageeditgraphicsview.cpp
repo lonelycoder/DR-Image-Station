@@ -82,6 +82,7 @@ ImageEditGraphicsView::ImageEditGraphicsView(QWidget *parent) :
     zoomItem->setBrush(Qt::green);
     clipRectItem = new GraphicsClipRectItem(QRectF(0, 0, 2000, 2000), pixmapItem);
     clipRectItem->setPen(QPen(QBrush(Qt::green), 2));
+    clipRectItem->setVisible(false);
 
     scene->addItem(pixmapItem);
     scene->addItem(xScalorItem);
@@ -120,13 +121,14 @@ void ImageEditGraphicsView::clear()
 void ImageEditGraphicsView::saveImage()
 {
     if (clipRectItem->isVisible()) {
-        if (QMessageBox::Yes == QMessageBox::warning(this, tr("Clip Image"),
-                                                     tr("Image Clipping hasn't finished, apply clipping?"),
-                                                     QMessageBox::Yes|QMessageBox::No)) {
+        QMessageBox::StandardButtons b = QMessageBox::warning(this, tr("Clip Image"),
+                                                              tr("Image Clipping hasn't finished, apply clipping?"),
+                                                              QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if (QMessageBox::Yes == b) {
             clipImage(false);
-        } else {
+        } else if (QMessageBox::No == b){
             clipRectItem->setVisible(false);
-        }
+        } else return;
     }
 
     if (ff && imageList.size()) {
@@ -136,9 +138,6 @@ void ImageEditGraphicsView::saveImage()
             if ((pixel->getRepresentation() == EPR_Uint16) ||
                     (pixel->getRepresentation() == EPR_Sint16)) {
                 Uint16 *pData = static_cast<Uint16*>(const_cast<void*>(pixel->getData()));
-                int cols = dcmImage->getWidth();
-                int rows = dcmImage->getHeight();
-
                 foreach (QGraphicsSimpleTextItem *item, flagItemList) {
                     QImage pixImage(item->boundingRect().size().toSize()*8, QImage::Format_RGB32);
                     pixImage.fill(0xff000000);
@@ -156,6 +155,63 @@ void ImageEditGraphicsView::saveImage()
 
                     Uint16 pValue = dcmImage->getPhotometricInterpretation()==EPI_Monochrome1?0:65535;
                     QPoint pos = item->pos().toPoint();
+                    int width = dcmImage->getWidth();
+                    int height = dcmImage->getHeight();
+                    // Pos transform
+                    if (hflip && vflip) {
+                        rotateAngle += 180;
+                        hflip = 0;
+                        vflip = 0;
+                    }
+                    if (rotateAngle%360 >= 180) {
+                        if (hflip) {
+                            rotateAngle += 180;
+                            hflip = 0;
+                            vflip = 1;
+                        } else if (vflip) {
+                            rotateAngle += 180;
+                            vflip = 0;
+                            hflip = 1;
+                        }
+                    }
+                    switch (rotateAngle%360) {
+                    case 0:
+                        if (hflip) pos.rx() = width - pos.x();
+                        else if (vflip) pos.ry() = height - pos.y();
+                        break;
+                    case 90:
+                        if (hflip) {
+                            int temp = pos.x();
+                            pos.rx() = pos.y();
+                            pos.ry() = temp;
+                        } else if (vflip) {
+                            int temp = pos.x();
+                            pos.rx() = height - pos.y();
+                            pos.ry() = width - temp;
+                        } else {
+                            int temp = pos.x();
+                            pos.rx() = height - pos.y();
+                            pos.ry() = temp;
+                        }
+                        break;
+                    case 180:
+                        pos.rx() = width - pos.x();
+                        pos.ry() = height - pos.y();
+                        break;
+                    case 270:
+                    {
+                        int temp = pos.x();
+                        pos.rx() = pos.y();
+                        pos.ry() = width - temp;
+                    }
+                        break;
+                    }
+
+                    dcmImage->flipImage(hflip, vflip);
+                    dcmImage->rotateImage((rotateAngle%360)*((hflip||vflip)?(-1):1));
+                    int cols = dcmImage->getWidth();
+                    int rows = dcmImage->getHeight();
+
                     for (int i = pos.y(); (i < pixImage.height()+pos.y()) && (i < rows); ++i) {
                         for (int j = pos.x(); (j < pixImage.width()+pos.x()) && (j < cols); ++j) {
                             if (pixImage.pixel(j-pos.x(), i-pos.y()) != QRgb(0xff000000))
@@ -164,9 +220,6 @@ void ImageEditGraphicsView::saveImage()
                     }
                 }
             }
-
-            dcmImage->flipImage(hflip, vflip);
-            dcmImage->rotateImage(rotateAngle%360);
 
             DcmDataset *dset = ff->getDataset();
             dset->putAndInsertString(DCM_WindowCenter, QString::number(winCenter).toLatin1().data());
@@ -370,6 +423,9 @@ void ImageEditGraphicsView::resizePixmapItem()
         pixmapItem->setTransformOriginPoint(pixmapItem->boundingRect().center());
         if (!manualPan) centerOn(pixmapItem);
         zoomItem->setText(tr("Zoom: %1%").arg(factor*100, 0, 'f', 2));
+        foreach (QGraphicsSimpleTextItem *item, flagItemList) {
+            item->setScale(factor*8);
+        }
 
         xScalorItem->setScale(factor);
         yScalorItem->setScale(factor);
@@ -735,9 +791,9 @@ void ImageEditGraphicsView::addLFlag()
     if (scene->mouseGrabberItem()==0 && imageList.size()) {
         QGraphicsSimpleTextItem *item = new QGraphicsSimpleTextItem(pixmapItem);
         item->setBrush(Qt::white);
-        item->setScale(8);
-        item->setFlags(QGraphicsItem::ItemIsMovable|QGraphicsItem::ItemIsSelectable/*|
-                       QGraphicsItem::ItemIgnoresTransformations*/);
+        item->setFlags(QGraphicsItem::ItemIsMovable|QGraphicsItem::ItemIsSelectable |
+                       QGraphicsItem::ItemIgnoresTransformations);
+        item->setScale(factor*8);
         QFont font;
         font.fromString(QSettings().value(IMAGE_FLAG_FONT).toString());
         item->setFont(font);
@@ -977,6 +1033,8 @@ void ImageEditGraphicsView::reset()
     pixmapItem->setRotation(0);
     rotateAngle = 0;
     pixmapItem->resetTransform();
+    hflip = 0;
+    vflip = 0;
     manualZoom = false;
     manualPan = false;
     resizePixmapItem();
